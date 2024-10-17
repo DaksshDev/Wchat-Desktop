@@ -22,6 +22,7 @@ if (!config.isDev) {
 app.on("ready", async () => {
 	config.mainWindow = await createMainWindow();
 	app.setAppUserModelId("W Chat");
+	app.setName("W Chat");
 	config.tray = createTray();
 	config.popupWindow = await createPopupWindow();
 
@@ -66,7 +67,7 @@ app.on("ready", async () => {
 
 	showNotification(
 		config.appName,
-		"Application running on background! See application tray.",
+		"Wchat is running on background",
 	);
 });
 

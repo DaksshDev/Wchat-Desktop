@@ -3,7 +3,7 @@ const isDev = require("electron-is-dev");
 
 let config = {
 	appName: "Wchat",
-	icon: join(__dirname, "..", "/favicon.ico"),
+	icon: join(__dirname, "..", "/icon.ico"),
 	tray: null,
 	isQuiting: false,
 	mainWindow: null,

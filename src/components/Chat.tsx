@@ -203,17 +203,26 @@ const Chat: React.FC<ChatProps> = ({
 		const messageElement = document.querySelector(
 			`[data-createdat='${messageTimestamp}']`,
 		);
-
+	
 		if (messageElement) {
 			// Scroll the element into view
 			messageElement.scrollIntoView({
 				behavior: "auto",
 				block: "center",
 			});
+	
+			// Add the highlight class
+			messageElement.classList.add('bg-blue-300', 'bg-opacity-50', 'transition', 'duration-500');
+	
+			// Remove the highlight class after a delay
+			setTimeout(() => {
+				messageElement.classList.remove('bg-blue-300', 'bg-opacity-50', 'transition', 'duration-500');
+			}, 700); // Highlight lasts for 700ms
 		} else {
-			console.warn("invalid timestamp" + messageTimestamp);
+			console.warn("Invalid timestamp: " + messageTimestamp);
 		}
 	};
+	
 
 	// Handle emoji selection
 	const handleEmojiClick = (emojiData: EmojiClickData) => {
@@ -376,8 +385,7 @@ const Chat: React.FC<ChatProps> = ({
 										</p>
 
 										{/* Display Reply Context */}
-										{msg.replyToContent &&
-											msg.replyUser &&
+										{msg.replyUser &&
 											msg.replyToTimestamp && (
 												<div
 													className="bg-gray-700 text-gray-300 p-2 mb-2 rounded-md border-l-4 border-blue-400 cursor-pointer"

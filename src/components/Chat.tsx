@@ -392,7 +392,9 @@ const Chat: React.FC<ChatProps> = ({
 														{msg.replyUser}
 													</p>
 													<p className="text-sm italic truncate">
-														{msg.replyToContent}
+														{msg.replyToContent
+															? msg.replyToContent
+															: "GIF"}
 													</p>
 												</div>
 											)}

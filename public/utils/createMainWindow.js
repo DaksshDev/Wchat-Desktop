@@ -13,8 +13,7 @@ exports.createMainWindow = async () => {
 			enableRemoteModule: true,
 			devTools: config.isDev,
 			contextIsolation: false,
-			vibrancy: "ultra-dark",
-			devTools: isDev // Enable DevTools if in development mode
+			vibrancy: "ultra-dark"
 		},
 		frame: false,
 		icon: config.icon,

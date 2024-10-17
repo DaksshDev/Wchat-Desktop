@@ -24,7 +24,6 @@ app.on("ready", async () => {
 	app.setAppUserModelId("W Chat");
 	config.tray = createTray();
 	config.popupWindow = await createPopupWindow();
-	config.mainWindow.openDevTools()
 
 	// Intercept external link clicks and prevent opening new windows
 	config.mainWindow.webContents.setWindowOpenHandler(({ url }) => {

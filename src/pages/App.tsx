@@ -39,7 +39,7 @@ export const AppPage: FC = () => {
 	const [currentTime, setCurrentTime] = useState("");
 	const [isContextOpen, setIsContextOpen] = useState(false);
 
-	const currentUsername = getUsernameFromCookie();
+	const currentUsername = localStorage.getItem("username");
 	const welcomeusername: string = currentUsername ?? "UNDEFINED";
 	const [friendUsername, setFriendUsername] = useState<string | null>(null);
 	const closeModal = () => setShowModal(false); // Function to close the modal
@@ -148,21 +148,6 @@ export const AppPage: FC = () => {
 	};
 
 	const [friendsList, setFriendsList] = useState<Friend[]>([]);
-
-	function getUsernameFromCookie(): string | null {
-		const cookieString = document.cookie;
-		const usernameMatch = cookieString
-			.split("; ")
-			.find((cookie) => cookie.startsWith("username="));
-
-		return usernameMatch ? usernameMatch.split("=")[1] : null;
-	}
-
-	function removeUsernameFromCookie() {
-		// Setting max-age to 0 effectively deletes the cookie
-		document.cookie = `username=; max-age=0; path=/; Secure; SameSite=Strict`;
-	}
-
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -323,7 +308,7 @@ export const AppPage: FC = () => {
 		setCurrentView("friends");
 	};
 	const logout = () => {
-		removeUsernameFromCookie();
+		localStorage.removeItem("username");
 		localStorage.removeItem("hasSeenWelcomeMessage");
 
 		// Redirect to the login screen

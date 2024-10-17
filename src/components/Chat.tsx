@@ -46,12 +46,8 @@ const Chat: React.FC<ChatProps> = ({
 	const [expandedMessages, setExpandedMessages] = useState<number[]>([]);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [showGifPicker, setShowGifPicker] = useState(false);
-	const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-
-	// Helper to safely convert text with HTML
-	const renderHTML = (html: string): { __html: string } => ({
-		__html: html,
-	});
+	const youtubeRegex =
+		/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 
 	const [showContextMenu, setShowContextMenu] = useState<{
 		x: number;
@@ -62,18 +58,11 @@ const Chat: React.FC<ChatProps> = ({
 	const chatRef = useRef<HTMLDivElement>(null);
 	const MAX_MESSAGE_LENGTH = 30000;
 	const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+	const [replyingTo, setReplyingTo] = useState<any>(null); // Track reply state
 
 	const linkifyOptions = {
 		className: "text-blue-400 underline cursor-pointer",
 		defaultProtocol: "https", // Ensures links without protocol still work
-	};
-
-	// Utility function to extract YouTube video ID
-	const extractYouTubeVideoID = (url: string) => {
-		const regex =
-			/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-		const match = url.match(regex);
-		return match ? match[1] : null;
 	};
 
 	useEffect(() => {
@@ -171,6 +160,11 @@ const Chat: React.FC<ChatProps> = ({
 				content: message,
 				gifUrl,
 				timestamp: Date.now(),
+				isReply: !!replyingTo,
+				replyTo: replyingTo ? replyingTo.id : null,
+				replyToContent: replyingTo ? replyingTo.content : null,
+				replyUser: replyingTo ? replyingTo.sender : null,
+				replyToTimestamp: replyingTo ? replyingTo.timestamp : null, // Add the replyToTimestamp
 			};
 
 			// Push message to recipient's chat and get the ID
@@ -197,8 +191,27 @@ const Chat: React.FC<ChatProps> = ({
 			});
 
 			// Reset message input and hide GIF picker
+			setReplyingTo(null); // Clear reply state
+			setShowEmojiPicker(false);
 			setMessage("");
 			setShowGifPicker(false);
+		}
+	};
+
+	const scrollToMessage = (messageTimestamp: any) => {
+		// Find the message element with the matching timestamp
+		const messageElement = document.querySelector(
+			`[data-createdat='${messageTimestamp}']`,
+		);
+
+		if (messageElement) {
+			// Scroll the element into view
+			messageElement.scrollIntoView({
+				behavior: "auto",
+				block: "center",
+			});
+		} else {
+			console.warn("invalid timestamp" + messageTimestamp);
 		}
 	};
 
@@ -297,85 +310,190 @@ const Chat: React.FC<ChatProps> = ({
 				ref={chatRef}
 				className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 select-text"
 			>
-				 {messages.length > 0 ? (
-                    messages.map((msg, idx) => {
-                        const isCurrentUser = msg.sender === currentUsername;
-                        const bgColor = isCurrentUser ? "bg-blue-600 text-white" : "bg-gray-700 text-white";
-                        const alignment = isCurrentUser ? "justify-end" : "justify-start";
-                        const avatar = isCurrentUser ? currentUsername : friendUsername;
-                        const avatarPic = isCurrentUser ? currentUserPic : friendPic;
+				{messages.length > 0 ? (
+					messages.map((msg, idx) => {
+						const isCurrentUser = msg.sender === currentUsername;
+						const bgColor = isCurrentUser
+							? "bg-blue-600 text-white"
+							: "bg-gray-700 text-white";
+						const alignment = isCurrentUser
+							? "justify-end"
+							: "justify-start";
+						const avatar = isCurrentUser
+							? currentUsername
+							: friendUsername;
+						const avatarPic = isCurrentUser
+							? currentUserPic
+							: friendPic;
 
-                        const isExpanded = expandedMessages.includes(idx);
-                        const contentToShow = isExpanded
-                            ? msg.content
-                            : msg.content.length > 300
-                            ? msg.content.slice(0, 300) + "..."
-                            : msg.content;
+						const isExpanded = expandedMessages.includes(idx);
+						const contentToShow = isExpanded
+							? msg.content
+							: msg.content.length > 300
+							? msg.content.slice(0, 300) + "..."
+							: msg.content;
 
-                        const youtubeMatch = msg.content.match(youtubeRegex);
-                        const videoId = youtubeMatch ? youtubeMatch[1] : null;
+						const youtubeMatch = msg.content.match(youtubeRegex);
+						const videoId = youtubeMatch ? youtubeMatch[1] : null;
 
-                        return (
-                            <div key={msg.id} onContextMenu={(e) => handleRightClickMessage(e, msg)}>
-                                {idx === 0 ||
-                                renderMessageDate(messages[idx - 1].timestamp) !== renderMessageDate(msg.timestamp) ? (
-                                    <p className="text-center text-gray-400 text-sm mb-2">
-                                        {renderMessageDate(msg.timestamp)}
-                                    </p>
-                                ) : null}
+						return (
+							<div
+								key={msg.id}
+								data-createdat={msg.timestamp}
+								onContextMenu={(e) =>
+									handleRightClickMessage(e, msg)
+								}
+							>
+								{idx === 0 ||
+								renderMessageDate(
+									messages[idx - 1].timestamp,
+								) !== renderMessageDate(msg.timestamp) ? (
+									<p className="text-center text-gray-400 text-sm mb-2">
+										{renderMessageDate(msg.timestamp)}
+									</p>
+								) : null}
 
-                                <div className={`flex ${alignment} items-end space-x-2`}>
-                                    {!isCurrentUser && (
-                                        <div className="avatar">
-                                            <div className="w-8 rounded-full">
-                                                <img src={avatarPic} alt={`${avatar}'s profile`} />
-                                            </div>
-                                        </div>
-                                    )}
+								<div
+									className={`flex ${alignment} items-end space-x-2`}
+								>
+									{!isCurrentUser && (
+										<div className="avatar">
+											<div className="w-8 rounded-full">
+												<img
+													src={avatarPic}
+													alt={`${avatar}'s profile`}
+												/>
+											</div>
+										</div>
+									)}
 
-                                    <div className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg shadow-md ${bgColor} relative`} style={{ wordBreak: "break-word" }}>
-                                        <p className="font-semibold">{msg.sender}</p>
-                                        
-                                        {/* Render content with link detection */}
-                                        <Linkify options={linkifyOptions}>{contentToShow}</Linkify>
-                                        
-                                        {/* Render YouTube video if URL detected */}
-                                        {videoId && <YouTube videoId={videoId} opts={{ width: "100%", height: "200px" }} className="mt-2" />}
-                                        
-                                        {/* Render GIF if available */}
-                                        {msg.gifUrl && <img src={msg.gifUrl} alt="GIF" className="mt-2 rounded-lg" />}
-                                        
-                                        {msg.content.length > 300 && !isExpanded && (
-                                            <button className="text-xs text-gray-100 underline" onClick={() => setExpandedMessages((prev) => [...prev, idx])}>
-                                                Read more
-                                            </button>
-                                        )}
-                                        {isExpanded && (
-                                            <button className="text-xs text-gray-100 underline" onClick={() => setExpandedMessages((prev) => prev.filter((i) => i !== idx))}>
-                                                Show less
-                                            </button>
-                                        )}
+									<div
+										className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg shadow-md ${bgColor} relative`}
+										style={{ wordBreak: "break-word" }}
+									>
+										<p className="font-semibold">
+											{msg.sender}
+										</p>
 
-                                        <div className="text-xs text-gray-400 mt-2">
-                                            {formatTimestamp(msg.timestamp)}
-                                        </div>
-                                    </div>
+										{/* Display Reply Context */}
+										{msg.replyToContent &&
+											msg.replyUser &&
+											msg.replyToTimestamp && (
+												<div
+													className="bg-gray-700 text-gray-300 p-2 mb-2 rounded-md border-l-4 border-blue-400 cursor-pointer"
+													onClick={() =>
+														scrollToMessage(
+															msg.replyToTimestamp,
+														)
+													}
+												>
+													<p className="text-xs font-semibold text-blue-300">
+														Replying to{" "}
+														{msg.replyUser}
+													</p>
+													<p className="text-sm italic truncate">
+														{msg.replyToContent}
+													</p>
+												</div>
+											)}
 
-                                    {isCurrentUser && (
-                                        <div className="avatar">
-                                            <div className="w-8 rounded-full">
-                                                <img src={avatarPic} alt={`${avatar}'s profile`} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })
-                ) : (
-                    <p className="text-gray-400 text-center">No messages yet...</p>
-                )}
+										{/* Render content with link detection */}
+										<Linkify options={linkifyOptions}>
+											{contentToShow}
+										</Linkify>
+
+										{/* Render YouTube video if URL detected */}
+										{videoId && (
+											<YouTube
+												videoId={videoId}
+												opts={{
+													width: "100%",
+													height: "200px",
+												}}
+												className="mt-2"
+											/>
+										)}
+
+										{/* Render GIF if available */}
+										{msg.gifUrl && (
+											<img
+												src={msg.gifUrl}
+												alt="GIF"
+												className="mt-2 rounded-lg"
+											/>
+										)}
+
+										{msg.content.length > 300 &&
+											!isExpanded && (
+												<button
+													className="text-xs text-gray-100 underline"
+													onClick={() =>
+														setExpandedMessages(
+															(prev) => [
+																...prev,
+																idx,
+															],
+														)
+													}
+												>
+													Read more
+												</button>
+											)}
+										{isExpanded && (
+											<button
+												className="text-xs text-gray-100 underline"
+												onClick={() =>
+													setExpandedMessages(
+														(prev) =>
+															prev.filter(
+																(i) =>
+																	i !== idx,
+															),
+													)
+												}
+											>
+												Show less
+											</button>
+										)}
+
+										<div className="text-xs text-gray-400 mt-2">
+											{formatTimestamp(msg.timestamp)}
+										</div>
+									</div>
+
+									{isCurrentUser && (
+										<div className="avatar">
+											<div className="w-8 rounded-full">
+												<img
+													src={avatarPic}
+													alt={`${avatar}'s profile`}
+												/>
+											</div>
+										</div>
+									)}
+								</div>
+							</div>
+						);
+					})
+				) : (
+					<p className="text-gray-400 text-center">
+						No messages yet...
+					</p>
+				)}
 			</div>
+
+			{/* Reply Indicator */}
+			{replyingTo && (
+				<div className="p-2 bg-gray-800 text-white">
+					Replying to <strong>{replyingTo.sender}</strong>
+					<button
+						onClick={() => setReplyingTo(null)}
+						className="ml-2 text-red-500"
+					>
+						Cancel
+					</button>
+				</div>
+			)}
 
 			{/* Chat Input */}
 			<div className="p-3 bg-gray-900 shadow-md flex items-center relative">
@@ -461,7 +579,10 @@ const Chat: React.FC<ChatProps> = ({
 						>
 							Delete Message
 						</li>
-						<li className="p-2 hover:bg-gray-700 cursor-pointer">
+						<li
+							className="p-2 hover:bg-gray-700 cursor-pointer"
+							onClick={() => setReplyingTo(selectedMessage)}
+						>
 							Reply
 						</li>
 						<li className="p-2 hover:bg-gray-700 cursor-pointer">

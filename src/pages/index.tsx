@@ -38,23 +38,12 @@ export const IndexPage: FC = () => {
 	const navigate = useNavigate();
 
     useEffect(() => {
-        const storedUsername = getUsernameFromCookie(); // Fetch username from cookie
+        const storedUsername = localStorage.getItem("username");
         if (storedUsername) {
             navigate("App"); // Redirect to AppPage if the username exists
         }
     }, [navigate]);
 
-    // Function to get username from cookie
-    const getUsernameFromCookie = (): string | null => {
-        const match = document.cookie.match(new RegExp("(^| )username=([^;]+)"));
-        return match ? match[2] : null; // Retrieve the username or null
-    };
-
-	function setUsernameInCookie(username: string) {
-		const expires = new Date();
-		expires.setFullYear(expires.getFullYear() + 10); // Set expiry to 10 years from now
-		document.cookie = `username=${username}; expires=${expires.toUTCString()}; path=/; Secure; SameSite=Strict`;
-	  }
 
 	// Check if username exists
 	const checkUsernameExists = async (username: string): Promise<boolean> => {
@@ -95,7 +84,7 @@ export const IndexPage: FC = () => {
 				const fetchedUsername = await fetchUsernameByUserId(userId);
 				if (fetchedUsername) {
 					setUsername(fetchedUsername);
-					setUsernameInCookie(fetchedUsername); // Store the username in a cookie
+					localStorage.setItem("username", fetchedUsername);
 				} else {
 					setError("Username not found for this account.");
 				}
@@ -187,7 +176,7 @@ export const IndexPage: FC = () => {
 		});
 		setLoading(false);
 		setShowModal(false);
-		setUsernameInCookie(username); // Store the username in a cookie
+		localStorage.setItem("username", username);
 		navigate("/App");
 	};
 

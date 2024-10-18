@@ -36,6 +36,7 @@
 <h3>Step 1: Clone the Repository</h3>
 <pre><code>
 git clone https://github.com/your-username/wchat.git
+<<<<<<< HEAD
 cd wchat
 </code></pre>
 
@@ -43,6 +44,11 @@ cd wchat
 <p>Inside the <code>pages</code> folder, create a file named <code>firebaseConfig.js</code>.</p>
 
 <pre><code>
+=======
+cd wchat```
+<h3>Step 2: Create <code>firebaseConfig.js</code></h3> <p>Inside the <code>pages</code> folder, create a file named <code>firebaseConfig.js</code>.</p>
+```bash
+>>>>>>> 4a9cd417695d447d9511d3b9e2114cb330d42ff8
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -61,8 +67,12 @@ export const db = getFirestore(app);
 export const storage = getStorage(app); // Initialize Storage
 export const rtdb = getDatabase(app); // Initialize Realtime Database
 
+<<<<<<< HEAD
 export default firebaseConfig;
 </code></pre>
+=======
+export default firebaseConfig;```
+>>>>>>> 4a9cd417695d447d9511d3b9e2114cb330d42ff8
 
 <h3>Step 3: Install Dependencies</h3>
 <pre><code>
@@ -74,6 +84,7 @@ npm install
 npm run dev
 </code></pre>
 
+<<<<<<< HEAD
 <hr>
 
 <h2>🤝 Contributing</h2>
@@ -95,3 +106,8 @@ npm run dev
 
 </body>
 </html>
+=======
+<h2>🤝 Contributing</h2> <p>Contributions are welcome! Feel free to fork the repository and submit a pull request with your improvements.</p>
+<h2>📄 License</h2> <p>This project is licensed under the MIT License – see the <a href="LICENSE">LICENSE</a> file for details.</p>
+<h2>📧 Contact</h2> <p>For any questions or suggestions, feel free to reach out to:</p> <ul> <li><b>Discord:</b> YourUsername#1234</li> <li><b>Twitter:</b> <a href="https://twitter.com/your_twitter_handle">@your_twitter_handle</a></li> </ul> ```
+>>>>>>> 4a9cd417695d447d9511d3b9e2114cb330d42ff8

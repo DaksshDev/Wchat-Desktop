@@ -28,8 +28,9 @@
 
 ```bash
 git clone https://github.com/your-username/wchat.git
-cd wchat
+cd wchat```
 <h3>Step 2: Create <code>firebaseConfig.js</code></h3> <p>Inside the <code>pages</code> folder, create a file named <code>firebaseConfig.js</code>.</p>
+```bash
 // firebaseConfig.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -48,7 +49,7 @@ export const db = getFirestore(app);
 export const storage = getStorage(app); // Initialize Storage
 export const rtdb = getDatabase(app); // Initialize Realtime Database
 
-export default firebaseConfig;
+export default firebaseConfig;```
 
 <h3>Step 3: Install Dependencies</h3>
 npm install

@@ -2,7 +2,7 @@ const { join } = require("path");
 const isDev = require("electron-is-dev");
 
 let config = {
-	appName: "Wchat",
+	appName: "W chat",
 	icon: join(__dirname, "..", "/icon.ico"),
 	tray: null,
 	isQuiting: false,

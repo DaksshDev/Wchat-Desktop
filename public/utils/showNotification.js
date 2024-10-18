@@ -1,7 +1,7 @@
 const { Notification, shell } = require("electron");
 const { join } = require("path");
 
-exports.showNotification = (title, body) => {
+exports.showNotification = (title, body, subtitle) => {
   try {
     // Windows Toast XML with button
     const toastXmlString = `
@@ -10,7 +10,8 @@ exports.showNotification = (title, body) => {
         <binding template="ToastGeneric">
           <image id="1" src="${join(__dirname, "..", "icon.ico")}" placement="appLogoOverride" hint-crop="circle"/>
           <text id="1">${title}</text>
-          <text id="2">${body}</text>
+		  <text id="2">${body}</text>
+          <text id="3" placement="attribution">${subtitle}</text>
         </binding>
       </visual>
       <actions>

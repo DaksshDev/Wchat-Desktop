@@ -545,13 +545,13 @@ const Chat: React.FC<ChatProps> = ({
 
 			{/* Reply Indicator */}
 			{replyingTo && (
-				<div className="p-2 bg-gray-800 text-white">
+				<div className="p-2 bg-gray-800 text-white rounded-t-lg">
 					Replying to <strong>{replyingTo.sender}</strong>
 					<button
 						onClick={() => setReplyingTo(null)}
 						className="ml-2 text-red-500"
 					>
-						Cancel
+						⠀⠀Cancel
 					</button>
 				</div>
 			)}

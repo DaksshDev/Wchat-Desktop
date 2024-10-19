@@ -59,6 +59,8 @@ const Chat: React.FC<ChatProps> = ({
 	const MAX_MESSAGE_LENGTH = 30000;
 	const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 	const [replyingTo, setReplyingTo] = useState<any>(null); // Track reply state
+	const [isCopied, setIsCopied] = useState(false);
+	const [isGifCopied, setIsGifCopied] = useState(false);
 
 	const linkifyOptions = {
 		className: "text-blue-400 underline cursor-pointer",
@@ -96,7 +98,10 @@ const Chat: React.FC<ChatProps> = ({
 
 	const handleScrollToBottom = () => {
 		if (chatRef.current) {
-			chatRef.current.scrollTop = chatRef.current.scrollHeight;
+			chatRef.current.scrollTo({
+				top: chatRef.current.scrollHeight,
+				behavior: "smooth", // This enables the smooth scroll animation
+			});
 		}
 	};
 
@@ -130,9 +135,12 @@ const Chat: React.FC<ChatProps> = ({
 
 	useEffect(() => {
 		if (chatRef.current) {
-			chatRef.current.scrollTop = chatRef.current.scrollHeight;
+			chatRef.current.scrollTo({
+				top: chatRef.current.scrollHeight,
+				behavior: "smooth", // This ensures a smooth scroll animation
+			});
 		}
-	}, [messages]);
+	}, [messages]); // This runs every time the 'messages' array changes
 
 	// Format message timestamp
 	const formatTimestamp = (timestamp: number) => {
@@ -203,26 +211,35 @@ const Chat: React.FC<ChatProps> = ({
 		const messageElement = document.querySelector(
 			`[data-createdat='${messageTimestamp}']`,
 		);
-	
+
 		if (messageElement) {
 			// Scroll the element into view
 			messageElement.scrollIntoView({
-				behavior: "auto",
+				behavior: "smooth",
 				block: "center",
 			});
-	
+
 			// Add the highlight class
-			messageElement.classList.add('bg-blue-300', 'bg-opacity-50', 'transition', 'duration-500');
-	
+			messageElement.classList.add(
+				"bg-blue-300",
+				"bg-opacity-50",
+				"transition",
+				"duration-500",
+			);
+
 			// Remove the highlight class after a delay
 			setTimeout(() => {
-				messageElement.classList.remove('bg-blue-300', 'bg-opacity-50', 'transition', 'duration-500');
+				messageElement.classList.remove(
+					"bg-blue-300",
+					"bg-opacity-50",
+					"transition",
+					"duration-500",
+				);
 			}, 700); // Highlight lasts for 700ms
 		} else {
 			console.warn("Invalid timestamp: " + messageTimestamp);
 		}
 	};
-	
 
 	// Handle emoji selection
 	const handleEmojiClick = (emojiData: EmojiClickData) => {
@@ -317,7 +334,7 @@ const Chat: React.FC<ChatProps> = ({
 			{/* Chat Messages */}
 			<div
 				ref={chatRef}
-				className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 select-text"
+				className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 select-text scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-neutral-950 scrollbar-track-rounded-md"
 			>
 				{messages.length > 0 ? (
 					messages.map((msg, idx) => {
@@ -357,7 +374,7 @@ const Chat: React.FC<ChatProps> = ({
 								renderMessageDate(
 									messages[idx - 1].timestamp,
 								) !== renderMessageDate(msg.timestamp) ? (
-									<p className="text-center text-gray-400 text-sm mb-2">
+									<p className="text-center text-gray-300 text-sm mb-2 bg-gray-800/30 rounded px-3 py-1 mx-auto w-fit">
 										{renderMessageDate(msg.timestamp)}
 									</p>
 								) : null}
@@ -418,7 +435,7 @@ const Chat: React.FC<ChatProps> = ({
 												videoId={videoId}
 												opts={{
 													width: "100%",
-													height: "200px",
+													height: "400px",
 												}}
 												className="mt-2"
 											/>
@@ -486,9 +503,43 @@ const Chat: React.FC<ChatProps> = ({
 						);
 					})
 				) : (
-					<p className="text-gray-400 text-center">
-						No messages yet...
-					</p>
+					<div className="flex justify-center items-start w-full mt-6">
+						<div className="bg-gray-800/70 p-6 rounded-lg text-center w-4/5 flex items-center">
+							{/* GIF on the left */}
+							<div className="w-1/3 flex justify-center items-center rounded-lg overflow-hidden">
+								<img
+									src="https://media1.tenor.com/m/J3mNIbj6A4wAAAAd/empty-shelves-john-travolta.gif"
+									alt="Confused Travolta"
+									className="w-full h-full  object-contain rounded-lg" // Rounded GIF
+								/>
+							</div>
+
+							{/* Vertical separator */}
+							<hr className="w-px h-64 bg-gray-500 mx-6" />
+
+							{/* Text and Button on the right */}
+							<div className="w-2/3 text-left">
+								<p className="text-white text-lg mb-4 leading-relaxed">
+									Looks a bit... empty here. <br />
+									How about we{" "}
+									<span className="text-blue-400 font-bold">
+										get started
+									</span>
+									?
+								</p>
+								<button
+									className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-md transition-all mt-4"
+									onClick={() =>
+										handleSendMessage(
+											"https://media1.tenor.com/m/VHsiL8B8P0wAAAAC/shincore-wave-emoji.gif",
+										)
+									}
+								>
+									Send Hi
+								</button>
+							</div>
+						</div>
+					</div>
 				)}
 			</div>
 
@@ -575,7 +626,7 @@ const Chat: React.FC<ChatProps> = ({
 			{/* Context Menu */}
 			{showContextMenu && (
 				<div
-					className="absolute z-50 w-80 bg-gray-800 text-white rounded shadow-lg p-2"
+					className="absolute z-50 w-52 bg-gray-800 text-white shadow-lg p-2 rounded-lg"
 					style={{
 						top: `${showContextMenu.y - 50}px`, // Add slight offset for better UX
 						left: `${showContextMenu.x - 70}px`,
@@ -583,20 +634,127 @@ const Chat: React.FC<ChatProps> = ({
 					onMouseLeave={() => setShowContextMenu(null)}
 				>
 					<ul>
+
+						{/* Reply Option */}
 						<li
-							className="p-2 hover:bg-gray-700 cursor-pointer"
-							onClick={() => setShowDeleteModal(true)}
-						>
-							Delete Message
-						</li>
-						<li
-							className="p-2 hover:bg-gray-700 cursor-pointer"
+							className="p-2 hover:bg-blue-600 cursor-pointer rounded-lg flex items-center"
 							onClick={() => setReplyingTo(selectedMessage)}
 						>
-							Reply
+							{/* Reply Icon */}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								height="20px"
+								viewBox="0 -960 960 960"
+								width="20px"
+								fill="#e8eaed"
+							>
+								<path d="m309.04-458.17 73.31 73.3q15.72 15.72 15.83 37.77.12 22.06-15.59 37.49-15.96 15.72-37.51 14.72-21.56-1-36.51-15.96L145.28-474.13q-15.95-15.59-15.95-36.57 0-20.97 15.95-36.93l164.05-164.04q16.19-15.96 36.91-15.96 20.72 0 36.35 15.96 15.71 14.86 16.21 36.46t-15.45 37.32l-74.31 74.54h331.2q87.11 0 149.11 61.62 62 61.62 62 149.49v125q0 21.97-15.25 37.28-15.24 15.31-37.13 15.31-21.64 0-37.22-15.31-15.58-15.31-15.58-37.28v-125q0-44.56-31.18-75.25-31.19-30.68-74.75-30.68h-331.2Z" />
+							</svg>
+							⠀Reply
 						</li>
-						<li className="p-2 hover:bg-gray-700 cursor-pointer">
-							More
+
+						{/* Copy Option */}
+						{ selectedMessage?.content && (<li
+							className="p-2 hover:bg-blue-600 cursor-pointer rounded-lg flex items-center"
+							onClick={() => {
+								navigator.clipboard.writeText(
+									selectedMessage?.content || "",
+								);
+								setIsCopied(true); // Set copied state to true
+
+								// Revert icon back to copy after 2 seconds
+								setTimeout(() => {
+									setIsCopied(false);
+								}, 2000);
+							}}
+						>
+							{/* Conditional Icon Rendering */}
+							{isCopied ? (
+								// Done Icon
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									height="20px"
+									viewBox="0 -960 960 960"
+									width="20px"
+									fill="#e8eaed"
+								>
+									<path d="M480-60.65q-86.72 0-162.93-32.62-76.22-32.62-133.7-90.1-57.48-57.48-90.1-133.7Q60.65-393.28 60.65-480q0-87.72 32.62-163.82 32.62-76.09 90.1-133.57 57.48-57.48 133.7-89.72 76.21-32.24 162.93-32.24 44.85 0 89.05 9.17 44.21 9.16 84.78 29.25 20.19 9 24.41 29.43 4.22 20.43-7.5 38.63-12.72 19.2-34.65 24.03-21.94 4.84-42.85-2.92-26.37-11.33-54.74-16.87-28.37-5.54-58.5-5.54-131.33 0-222.75 91.3-91.42 91.3-91.42 222.87t91.42 222.87q91.42 91.3 222.75 91.3 131.09 0 222.63-91.18 91.54-91.19 91.54-222.03 0-4.05.12-9.09t-.88-9.09q-.76-22.67 11.2-40.75 11.96-18.07 32.39-24.07 21.67-6 39.87 6.57 18.2 12.58 19.96 34.25.76 9.81 1.64 20.61.88 10.81.88 20.61 0 86.72-32.24 162.93-32.24 76.22-89.72 133.7-57.48 57.48-133.57 90.1Q567.72-60.65 480-60.65Zm-54.72-371.33L790.37-796.3q15.96-15.72 37.03-15.22 21.08.5 36.03 15.22 15.96 15.95 15.96 36.53 0 20.57-15.96 36.53L460.91-321.96q-15.95 16.2-36.63 16.2-20.67 0-36.63-16.2L279.48-430.13q-15.96-15.72-15.96-36.79 0-21.08 15.96-36.8 15.95-15.95 37.03-15.95 21.08 0 37.03 15.95l71.74 71.74Z" />
+								</svg>
+							) : (
+								// Copy Icon
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									height="20px"
+									viewBox="0 -960 960 960"
+									width="20px"
+									fill="#e8eaed"
+								>
+									<path d="M375.93-211.67q-43.29 0-74.23-30.94-30.94-30.94-30.94-74.24v-481.3q0-43.3 30.94-74.24 30.94-30.94 74.23-30.94h385.31q43.29 0 74.11 30.94t30.82 74.24v481.3q0 43.3-30.82 74.24-30.82 30.94-74.11 30.94H375.93Zm0-105.18h385.31v-481.3H375.93v481.3ZM198.76-34.74q-43.29 0-74.11-30.82t-30.82-74.11v-533.9q0-21.63 15.24-37.11 15.25-15.47 37.01-15.47 21.77 0 37.22 15.47 15.46 15.48 15.46 37.11v533.9h437.89q21.64 0 37.12 15.24 15.47 15.25 15.47 37.01 0 21.77-15.47 37.22-15.48 15.46-37.12 15.46H198.76Zm177.17-282.11v-481.3 481.3Z" />
+								</svg>
+							)}
+							{isCopied ? "⠀Copied!" : "⠀Copy"}
+						</li>
+						)}
+
+						{/* Copy Gif Url Option */}
+						{selectedMessage?.gifUrl && ( <li
+							className="p-2 hover:bg-blue-600 cursor-pointer rounded-lg flex items-center"
+							onClick={() => {
+								navigator.clipboard.writeText(
+									selectedMessage?.gifUrl || "",
+								);
+								setIsGifCopied(true); // Set copied state to true
+
+								// Revert icon back to copy after 2 seconds
+								setTimeout(() => {
+									setIsGifCopied(false);
+								}, 2000);
+							}}
+						>
+							{/* Conditional Icon Rendering */}
+							{isGifCopied ? (
+								// Done Icon
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									height="20px"
+									viewBox="0 -960 960 960"
+									width="20px"
+									fill="#e8eaed"
+								>
+									<path d="M480-60.65q-86.72 0-162.93-32.62-76.22-32.62-133.7-90.1-57.48-57.48-90.1-133.7Q60.65-393.28 60.65-480q0-87.72 32.62-163.82 32.62-76.09 90.1-133.57 57.48-57.48 133.7-89.72 76.21-32.24 162.93-32.24 44.85 0 89.05 9.17 44.21 9.16 84.78 29.25 20.19 9 24.41 29.43 4.22 20.43-7.5 38.63-12.72 19.2-34.65 24.03-21.94 4.84-42.85-2.92-26.37-11.33-54.74-16.87-28.37-5.54-58.5-5.54-131.33 0-222.75 91.3-91.42 91.3-91.42 222.87t91.42 222.87q91.42 91.3 222.75 91.3 131.09 0 222.63-91.18 91.54-91.19 91.54-222.03 0-4.05.12-9.09t-.88-9.09q-.76-22.67 11.2-40.75 11.96-18.07 32.39-24.07 21.67-6 39.87 6.57 18.2 12.58 19.96 34.25.76 9.81 1.64 20.61.88 10.81.88 20.61 0 86.72-32.24 162.93-32.24 76.22-89.72 133.7-57.48 57.48-133.57 90.1Q567.72-60.65 480-60.65Zm-54.72-371.33L790.37-796.3q15.96-15.72 37.03-15.22 21.08.5 36.03 15.22 15.96 15.95 15.96 36.53 0 20.57-15.96 36.53L460.91-321.96q-15.95 16.2-36.63 16.2-20.67 0-36.63-16.2L279.48-430.13q-15.96-15.72-15.96-36.79 0-21.08 15.96-36.8 15.95-15.95 37.03-15.95 21.08 0 37.03 15.95l71.74 71.74Z" />
+								</svg>
+							) : (
+								// Copy Icon
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									height="20px"
+									viewBox="0 -960 960 960"
+									width="20px"
+									fill="#e8eaed"
+								>
+									<path d="M375.93-211.67q-43.29 0-74.23-30.94-30.94-30.94-30.94-74.24v-481.3q0-43.3 30.94-74.24 30.94-30.94 74.23-30.94h385.31q43.29 0 74.11 30.94t30.82 74.24v481.3q0 43.3-30.82 74.24-30.82 30.94-74.11 30.94H375.93Zm0-105.18h385.31v-481.3H375.93v481.3ZM198.76-34.74q-43.29 0-74.11-30.82t-30.82-74.11v-533.9q0-21.63 15.24-37.11 15.25-15.47 37.01-15.47 21.77 0 37.22 15.47 15.46 15.48 15.46 37.11v533.9h437.89q21.64 0 37.12 15.24 15.47 15.25 15.47 37.01 0 21.77-15.47 37.22-15.48 15.46-37.12 15.46H198.76Zm177.17-282.11v-481.3 481.3Z" />
+								</svg>
+							)}
+							{isGifCopied ? "⠀Gif Copied!" : "⠀Copy Gif Url"}
+						</li>
+						)}
+
+						{/* Delete Message Option */}
+						<li
+							className="p-2 hover:bg-red-600 cursor-pointer rounded-lg flex items-center"
+							onClick={() => setShowDeleteModal(true)}
+						>
+							{/* Delete Icon */}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								height="20px"
+								viewBox="0 -960 960 960"
+								width="20px"
+								fill="#e8eaed"
+							>
+								<path d="M305.85-108.65q-44.57 0-74.87-30.3-30.31-30.31-30.31-74.88v-483.06h-12q-21.73 0-37.04-15.25-15.3-15.24-15.3-37.01 0-21.76 15.3-37.34 15.31-15.58 37.04-15.58h188.07v-12q0-19.97 13.84-34.13 13.85-14.17 34.46-14.17H536q20.61 0 34.62 13.98 14.01 13.98 14.01 34.32v12h188.21q21.98 0 37.29 15.42 15.31 15.41 15.31 36.96 0 21.89-15.31 37.34-15.31 15.46-37.28 15.46h-12v482.63q0 45.3-30.3 75.46-30.31 30.15-74.88 30.15H305.85Zm349.82-588.24H305.85v483.06h349.82v-483.06ZM411.55-283.96q20.35 0 35.14-14.63 14.79-14.64 14.79-35.08v-243.37q0-20.45-14.58-35.08-14.57-14.64-34.93-14.64-20.35 0-35.26 14.64-14.91 14.63-14.91 35.08v243.37q0 20.44 14.7 35.08 14.7 14.63 35.05 14.63Zm138.48 0q20.35 0 35.14-14.63 14.79-14.64 14.79-35.08v-243.37q0-20.45-14.58-35.08-14.58-14.64-34.93-14.64t-35.26 14.64q-14.91 14.63-14.91 35.08v243.37q0 20.44 14.7 35.08 14.69 14.63 35.05 14.63ZM305.85-696.89v483.06-483.06Z" />
+							</svg>
+							⠀Delete Message
 						</li>
 					</ul>
 				</div>
@@ -604,23 +762,30 @@ const Chat: React.FC<ChatProps> = ({
 
 			{/* Delete Modal */}
 			{showDeleteModal && (
-				<div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
-					<div className="bg-neutral-950 p-6 rounded-lg space-y-1 flex flex-col items-center justify-center">
-						<h2 className="text-lg font-semibold mb-4">
+				<div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm transition-opacity duration-300 ease-in-out">
+					<div className="bg-neutral-900 p-6 w-30 sm:w-1/3 rounded-lg space-y-4 flex flex-col items-center justify-center shadow-lg text-center">
+						{/* Modal Title */}
+						<h2 className="text-xl font-semibold mb-2 text-white">
 							Delete Message
 						</h2>
+
+						{/* Information Text */}
+						<p className="text-sm text-gray-400 mb-4">
+							You can delete messages through this dialog.
+						</p>
+
+						{/* Delete Options */}
 						{selectedMessage?.sender === currentUsername ? (
 							<>
 								<button
 									onClick={() => handleDeleteMessage(true)}
-									className="btn bg-red-600 text-white"
+									className="w-full py-2 mb-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200 ease-in-out"
 								>
 									Delete for Everyone
 								</button>
-								<br />
 								<button
 									onClick={() => handleDeleteMessage(false)}
-									className="btn bg-yellow-500 text-white"
+									className="w-full py-2 mb-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors duration-200 ease-in-out"
 								>
 									Delete for Me
 								</button>
@@ -628,15 +793,16 @@ const Chat: React.FC<ChatProps> = ({
 						) : (
 							<button
 								onClick={() => handleDeleteMessage(false)}
-								className="btn bg-yellow-500 text-white"
+								className="w-full py-2 mb-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors duration-200 ease-in-out"
 							>
 								Delete for Me
 							</button>
 						)}
-						<br />
+
+						{/* Cancel Button */}
 						<button
 							onClick={() => setShowDeleteModal(false)}
-							className="btn bg-gray-900 text-white"
+							className="w-full py-2 mt-2 text-white bg-gray-700 hover:bg-gray-800 rounded-lg transition-colors duration-200 ease-in-out"
 						>
 							Cancel
 						</button>

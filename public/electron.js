@@ -68,6 +68,7 @@ app.on("ready", async () => {
 	showNotification(config.appName, "Wchat is running on background", "See Your Application Tray");
 });
 
+
 app.on("window-all-closed", () => {
 	if (process.platform !== "darwin") app.quit();
 });

@@ -1,14 +1,25 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
 	collection,
 	query,
 	where,
 	getDocs,
+	getDoc,
 	updateDoc,
 	doc,
 } from "firebase/firestore";
-import { db } from "../pages/FirebaseConfig";
+import { db, rtdb, storage } from "../pages/FirebaseConfig";
+import { set, ref, get } from "firebase/database";
 import { arrayUnion } from "firebase/firestore";
+import { getDownloadURL, uploadBytes, ref as sref } from "firebase/storage";
+
+interface GroupData {
+	name: string;
+	id: string;
+	description: string;
+	photoURL: string;
+	[key: string]: any; // Allow additional dynamic properties
+}
 
 interface AddProps {
 	userId: string;
@@ -35,9 +46,27 @@ export const Add: React.FC<AddProps> = ({
 	const [searchTerm, setSearchTerm] = useState("");
 	const [users, setUsers] = useState<User[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
+	const [isGroupModalVisible, setIsGroupModalVisible] = useState(false);
 	const [inputValue, setInputValue] = useState(""); // Input field value
 	const [showToast, setShowToast] = useState(false);
 	const [toastMessage, setToastMessage] = useState(""); // Toast message content
+	const [groupName, setGroupName] = useState("");
+	const [groupID, setGroupID] = useState("");
+	const [groupDescription, setGroupDescription] = useState("");
+	const [groupPhoto, setGroupPhoto] = useState<File | null>(null); // Allow both null and File
+	const [friendsList, setFriendsList] = useState<
+		{ username: string; profilePicUrl: string }[]
+	>([]);
+	const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+	const [avatarURL, setAvatarURL] = useState<string>(""); // Default to an empty string
+
+	const handleGroupPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]; // Optional chaining for null checks
+		if (file) {
+			setGroupPhoto(file); // Save the selected file to state
+			setAvatarURL(URL.createObjectURL(file)); // Generate a preview URL from the file
+		}
+	};
 
 	const searchTimeoutRef = useRef<number | null>(null);
 
@@ -84,11 +113,113 @@ export const Add: React.FC<AddProps> = ({
 		}
 	};
 
+	const handleCreateGroup = async () => {
+		if (!groupName || !groupID) {
+			toggleModal();
+			setIsGroupModalVisible(false);
+			setShowToast(true);
+			setToastMessage("Please enter a group name and ID");
+			resetModalFields();
+			return;
+		}
+
+		let groupPicUrl = avatarURL; // Fallback to general avatar URL
+
+		try {
+			if (groupPhoto) {
+				// Upload the provided group photo to Firebase Storage
+				const storagePath = `groupPhotos/${groupID}/${groupPhoto.name}`;
+				const imageRef = sref(storage, storagePath);
+				const uploadResult = await uploadBytes(imageRef, groupPhoto);
+				groupPicUrl = await getDownloadURL(uploadResult.ref);
+			} else {
+				// Fetch default avatar based on the group name
+				const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${groupName}&background=random&size=512`;
+
+				// Fetch the image blob from the URL
+				const response = await fetch(defaultAvatarUrl);
+				const blob = await response.blob();
+
+				// Upload the default avatar to Firebase Storage
+				const storagePath = `groupPhotos/${groupID}/default_avatar.png`;
+				const imageRef = sref(storage, storagePath);
+				const uploadResult = await uploadBytes(imageRef, blob);
+				groupPicUrl = await getDownloadURL(uploadResult.ref);
+			}
+		} catch (error) {
+			console.error("Error uploading group photo:", error);
+			toggleModal();
+			resetModalFields();
+			setIsGroupModalVisible(false);
+			setShowToast(true);
+			setToastMessage("Failed to upload group photo");
+			return;
+		}
+
+		// Check if the group ID already exists
+		const groupRef = ref(rtdb, `groups/${groupID}`);
+		const groupSnapshot = await get(groupRef);
+
+		if (groupSnapshot.exists()) {
+			toggleModal();
+			setIsGroupModalVisible(false);
+			resetModalFields();
+			setShowToast(true);
+			setToastMessage("Group ID already exists!");
+			return;
+		}
+
+		// Create the group data object
+		const groupData: GroupData = {
+			name: groupName,
+			id: groupID,
+			description: groupDescription,
+			photoURL: groupPicUrl,
+			members: {}, // Initialize an empty object for members
+		};
+
+		// Add each selected member with a 'messages' child inside their entry
+		selectedMembers.forEach((member) => {
+			groupData.members[member] = {
+				joinedAt: new Date().toISOString(),
+				messages: {}, // Initialize an empty object for messages
+			};
+		});
+
+		try {
+			await set(groupRef, groupData);
+			setShowToast(true);
+			setToastMessage("Group created successfully!");
+			resetModalFields();
+			setIsGroupModalVisible(false);
+			toggleModal(); // Close the modal after successful creation
+		} catch (error) {
+			console.error("Error creating group:", error);
+			setIsGroupModalVisible(false);
+			resetModalFields();
+			toggleModal();
+			setShowToast(true);
+			setToastMessage("Failed to create group");
+		}
+	};
+
+	// Helper function to reset the modal input fields
+	const resetModalFields = () => {
+		setGroupName("");
+		setGroupID("");
+		setGroupDescription("");
+		setGroupPhoto(null);
+		setSelectedMembers([]);
+	};
+
 	const checkIfAlreadyFriend = async (recipientUsername: string) => {
 		try {
 			// Query current user's friend list
 			const currentUserDoc = await getDocs(
-				query(collection(db, "users"), where("username", "==", currentUsername))
+				query(
+					collection(db, "users"),
+					where("username", "==", currentUsername),
+				),
 			);
 			if (currentUserDoc.empty) return false; // Return false if user not found
 
@@ -101,6 +232,58 @@ export const Add: React.FC<AddProps> = ({
 			console.error("Error checking friend list: ", error);
 			return false;
 		}
+	};
+
+	// Fetch friends from Firestore (call this on modal open or in useEffect)
+	// Fetch friend list inside useEffect
+	useEffect(() => {
+		const fetchFriendsList = async () => {
+			try {
+				// Fetch the user document for the current user
+				const userDoc = await getDoc(doc(db, "users", currentUsername));
+				if (userDoc.exists()) {
+					const data = userDoc.data();
+					const friends = data.friendList || [];
+
+					// Fetch profile picture URLs for each friend
+					const friendsWithProfilePics = await Promise.all(
+						friends.map(async (username: string) => {
+							const friendDoc = await getDoc(
+								doc(db, "users", username),
+							);
+							if (friendDoc.exists()) {
+								const friendData = friendDoc.data();
+								return {
+									username,
+									profilePicUrl:
+										friendData.profilePicUrl || "",
+								};
+							}
+							return { username, profilePicUrl: "" };
+						}),
+					);
+
+					// Update state with fetched friends data
+					setFriendsList(friendsWithProfilePics);
+				}
+			} catch (error) {
+				console.error("Error fetching friends list:", error);
+			}
+		};
+
+		if (currentUsername) {
+			fetchFriendsList(); // Fetch the friend list when the username is available
+		}
+	}, [currentUsername]);
+
+	// Function to handle member selection
+	const handleMemberSelect = (username: string) => {
+		setSelectedMembers(
+			(prevSelected) =>
+				prevSelected.includes(username)
+					? prevSelected.filter((user) => user !== username) // Deselect if already selected
+					: [...prevSelected, username], // Add to selected if not already selected
+		);
 	};
 
 	const sendFriendRequest = async (recipientUsername: string) => {
@@ -260,7 +443,12 @@ export const Add: React.FC<AddProps> = ({
 								</h3>
 
 								<div className="my-4">
-									<button className="btn bg-green-600 hover:bg-green-700 w-full">
+									<button
+										className="btn bg-green-600 hover:bg-green-700 w-full"
+										onClick={() =>
+											setIsGroupModalVisible(true)
+										}
+									>
 										Create My Own
 									</button>
 								</div>
@@ -302,6 +490,110 @@ export const Add: React.FC<AddProps> = ({
 							>
 								Close
 							</a>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{isGroupModalVisible && (
+				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 z-40">
+					<div className="modal-box bg-zinc-900 text-white w-full max-w-4xl min-h-fit space-y-3 p-6 rounded-lg shadow-lg">
+						<h2 className="text-center pb-3 text-4xl font-bold">
+							Create Group
+						</h2>
+
+						<div className="flex justify-center mb-4">
+							<label
+								htmlFor="groupPhotoUpload"
+								className="cursor-pointer"
+							>
+								<img
+									src={avatarURL}
+									alt="Click to Upload!"
+									className="w-24 h-24 rounded-full border-2 border-gray-300 hover:opacity-80 transition-opacity"
+								/>
+							</label>
+							<input
+								id="groupPhotoUpload"
+								type="file"
+								accept="image/*"
+								onChange={(e) => handleGroupPhotoChange(e)}
+								className="hidden"
+							/>
+						</div>
+
+						<input
+							type="text"
+							placeholder="Group Name"
+							className="input input-bordered w-full input-info bg-gray-700 text-white"
+							value={groupName}
+							onChange={(e) => setGroupName(e.target.value)}
+						/>
+						<input
+							type="text"
+							placeholder="Group ID"
+							className="input input-bordered w-full input-info bg-gray-700 text-white"
+							value={groupID}
+							onChange={(e) => setGroupID(e.target.value)}
+						/>
+						<textarea
+							placeholder="Group Description"
+							className="input input-bordered w-full input-info bg-gray-700 text-white"
+							value={groupDescription}
+							onChange={(e) =>
+								setGroupDescription(e.target.value)
+							}
+						/>
+
+						<div className="mt-4">
+							<h3 className="text-lg font-semibold">
+								Set Members
+							</h3>
+							<div className="h-48 overflow-y-auto bg-gray-800 rounded-md p-2">
+								{/* Assuming you have a members array from your friend list */}
+								{friendsList.map((friend) => (
+									<div
+										key={friend.username}
+										className="flex items-center space-x-2 mb-2"
+									>
+										<img
+											src={friend.profilePicUrl}
+											alt={friend.username}
+											className="w-10 h-10 rounded-full"
+										/>
+										<label className="cursor-pointer flex items-center">
+											<input
+												type="checkbox"
+												className="mr-2"
+												onChange={() =>
+													handleMemberSelect(
+														friend.username,
+													)
+												} // Handle member selection
+											/>
+											<span>{friend.username}</span>
+										</label>
+									</div>
+								))}
+							</div>
+						</div>
+
+						<button
+							onClick={handleCreateGroup}
+							className="btn bg-green-600 hover:bg-green-700 w-full mt-4"
+						>
+							Create Group
+						</button>
+						<div className="modal-action">
+							<button
+								onClick={() => {
+									setIsGroupModalVisible(false);
+									toggleModal();
+								}}
+								className="btn bg-red-500 hover:bg-red-600"
+							>
+								Close
+							</button>
 						</div>
 					</div>
 				</div>

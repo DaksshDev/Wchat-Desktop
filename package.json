@@ -67,7 +67,6 @@
 		"react-player": "^2.16.0",
 		"react-router-dom": "^6.4.4",
 		"react-use": "^17.4.0",
-		"react-youtube": "^10.1.0",
 		"tailwind-merge": "^2.5.2",
 		"uuid": "^10.0.0"
 	},

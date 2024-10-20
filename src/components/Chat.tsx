@@ -242,47 +242,50 @@ const Chat: React.FC<ChatProps> = ({
 			});
 			const mediaRecorder = new MediaRecorder(mediaStream);
 			let audioChunks: Blob[] = [];
-	
+
 			mediaRecorder.ondataavailable = (event) => {
 				audioChunks.push(event.data);
 			};
-	
+
 			mediaRecorder.onstop = async () => {
 				const audioBlob = new Blob(audioChunks, { type: "audio/mpeg" });
-	
+
 				// Get a reference to Firebase Storage
 				const audioRef = storageRef(
 					storage,
-					`voiceMessages/${Date.now()}.mp3`
+					`voiceMessages/${Date.now()}.mp3`,
 				);
-	
+
 				// Start uploading
 				setIsUploading(true); // Set uploading state to true
-				
+
 				// Upload the audio file to Firebase Storage
 				await uploadBytes(audioRef, audioBlob);
 				const downloadURL = await getDownloadURL(audioRef);
-	
+
 				// Send the voice message with the download URL
 				handleSendMessage(null, downloadURL);
-	
+
 				// Reset the recording state and uploading state
 				setIsRecording(false);
 				setIsUploading(false); // Reset uploading state
 			};
-	
+
 			mediaRecorder.start();
 			setMediaRecorderInstance(mediaRecorder);
-	
+
 			setTimeout(() => {
 				if (mediaRecorder.state === "recording") {
 					mediaRecorder.stop();
 				}
 			}, 600000); // 10 minutes
-	
+
 			setIsRecording(true);
 		} else {
-			if (mediaRecorderInstance && mediaRecorderInstance.state === "recording") {
+			if (
+				mediaRecorderInstance &&
+				mediaRecorderInstance.state === "recording"
+			) {
 				mediaRecorderInstance.stop();
 			}
 		}
@@ -309,6 +312,8 @@ const Chat: React.FC<ChatProps> = ({
 				replyToContent: replyingTo ? replyingTo.content : null,
 				replyUser: replyingTo ? replyingTo.sender : null,
 				replyToTimestamp: replyingTo ? replyingTo.timestamp : null, // Add the replyToTimestamp
+				replyTogifUrl: replyingTo?.gifUrl || null,
+				replyToaudioUrl: replyingTo?.audioUrl || null,
 			};
 
 			// Push message to recipient's chat and get the ID
@@ -555,7 +560,11 @@ const Chat: React.FC<ChatProps> = ({
 													<p className="text-sm italic truncate">
 														{msg.replyToContent
 															? msg.replyToContent
-															: "GIF"}
+															: msg.replyTogifUrl
+															? "GIF"
+															: msg.replyToaudioUrl
+															? "Voice message"
+															: "No content available"}
 													</p>
 												</div>
 											)}
@@ -700,11 +709,11 @@ const Chat: React.FC<ChatProps> = ({
 
 			{/* Display the "Uploading..." indicator */}
 			{isUploading && (
-            <div className="p-2 text-gray-500 italic rounded-t-lg">
-                <strong>Uploading...</strong>
-                {/* You can add a loading animation here if needed */}
-            </div>
-        )}
+				<div className="p-2 text-gray-500 italic rounded-t-lg">
+					<strong>Uploading...</strong>
+					{/* You can add a loading animation here if needed */}
+				</div>
+			)}
 
 			{/* Display the "Friend is typing..." indicator */}
 			{isFriendTyping && (

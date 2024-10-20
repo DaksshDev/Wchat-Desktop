@@ -760,7 +760,6 @@ export const AppPage: FC = () => {
 				<div className="fixed inset-0 top-10 left-16 bg-black rounded-lg overflow-hidden shadow-lg z-40">
 					<Chat
 						friendUsername={activeChat.username}
-						isDM={!activeChat.isGroup} // Reflects DM status correctly
 						friendPic={activeChat.friendPic || undefined}
 						currentUserPic={userInfo?.profilePicUrl}
 						onClose={() => {

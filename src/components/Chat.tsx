@@ -31,20 +31,16 @@ import Linkify from "linkify-react";
 import ReactPlayer from "react-player";
 
 interface ChatProps {
-	isDM: boolean;
 	friendUsername?: string;
 	friendPic?: string;
-	groupId?: string;
 	onClose: () => void;
 	currentUsername?: string;
 	currentUserPic?: string;
 }
 
 const Chat: React.FC<ChatProps> = ({
-	isDM,
 	friendUsername,
 	friendPic,
-	groupId,
 	onClose,
 	currentUsername,
 	currentUserPic,
@@ -183,7 +179,7 @@ const Chat: React.FC<ChatProps> = ({
 	};
 
 	useEffect(() => {
-		if (isDM && friendUsername) {
+		if (friendUsername) {
 			const chatPath = `dm/${currentUsername}/${friendUsername}/messages/`;
 			const messagesRef = ref(rtdb, chatPath);
 
@@ -208,7 +204,7 @@ const Chat: React.FC<ChatProps> = ({
 				off(messagesRef, "value", listener);
 			};
 		}
-	}, [currentUsername, friendUsername, isDM]);
+	}, [currentUsername, friendUsername]);
 
 	useEffect(() => {
 		if (chatRef.current) {
@@ -446,7 +442,7 @@ const Chat: React.FC<ChatProps> = ({
 			{/* Navbar */}
 			<div className="flex items-center justify-between p-4 bg-gray-900 text-white shadow-md">
 				<div className="flex items-center space-x-2">
-					{isDM && friendUsername ? (
+					{friendUsername && (
 						<>
 							<div className="avatar">
 								<div className="w-10 rounded-full">
@@ -460,10 +456,6 @@ const Chat: React.FC<ChatProps> = ({
 								{friendUsername}
 							</span>
 						</>
-					) : (
-						<span className="text-lg font-semibold">
-							Group: {groupId}
-						</span>
 					)}
 				</div>
 				<button
@@ -935,7 +927,7 @@ const Chat: React.FC<ChatProps> = ({
 							</li>
 						)}
 
-						{/* Copy Gif Url Option */}
+						{/* Copy AudioUrl Url Option */}
 						{selectedMessage?.audioUrl && (
 							<li
 								className="p-2 hover:bg-blue-600 cursor-pointer rounded-lg flex items-center"

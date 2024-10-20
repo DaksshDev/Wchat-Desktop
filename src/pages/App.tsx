@@ -816,7 +816,7 @@ export const AppPage: FC = () => {
 					{/* Server icons with tooltips */}
 					<div className="space-y-4 mt-4 flex flex-col items-center justify-center font-helvetica">
 						<div
-							className="tooltip tooltip-right"
+							className="tooltip tooltip-right z-50"
 							data-tip="Group 1"
 						>
 							<div className="rounded-full w-12 h-12 shadow-md hover:shadow-blue-500/50 bg-gray-500 hover:opacity-80 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease-linear">
@@ -829,7 +829,7 @@ export const AppPage: FC = () => {
 						</div>
 
 						<div
-							className="tooltip tooltip-right"
+							className="tooltip tooltip-right z-50"
 							data-tip="Group 2"
 						>
 							<div className="rounded-full w-12 h-12 shadow-md hover:shadow-blue-500/50 bg-gray-500 hover:opacity-80 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease">
@@ -842,7 +842,7 @@ export const AppPage: FC = () => {
 						</div>
 
 						<div
-							className="tooltip tooltip-right"
+							className="tooltip tooltip-right z-50"
 							data-tip="Group 3"
 						>
 							<div className="rounded-full w-12 h-12 bg-gray-500 shadow-md hover:shadow-blue-500/50 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease">
@@ -1034,7 +1034,7 @@ export const AppPage: FC = () => {
 													e,
 												)
 											}
-											className={`flex relative items-center rounded-lg p-2 cursor-pointer z-10 group/item transition duration-300 ease-in-out ${
+											className={`flex relative items-center rounded-lg p-2 cursor-pointer group/item transition duration-300 ease-in-out ${
 												activeFriend ===
 													friend.username &&
 												isContextOpen

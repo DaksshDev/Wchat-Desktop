@@ -8,7 +8,15 @@ import {
 	FaSmile,
 	FaArrowDown,
 } from "react-icons/fa";
-import { ref, push, set, onValue, off, remove } from "firebase/database"; // Import remove for deleting messages
+import {
+	ref,
+	push,
+	set,
+	onValue,
+	off,
+	remove,
+	runTransaction,
+} from "firebase/database"; // Import remove for deleting messages
 import { DataSnapshot } from "firebase/database";
 import { format, isToday } from "date-fns";
 import EmojiPicker, {
@@ -67,6 +75,70 @@ const Chat: React.FC<ChatProps> = ({
 		defaultProtocol: "https", // Ensures links without protocol still work
 	};
 
+	const [isTyping, setIsTyping] = useState(false); // Whether the current user is typing
+	const [isFriendTyping, setIsFriendTyping] = useState(false); // Whether the friend is typing
+	const [typingDots, setTypingDots] = useState("."); // Animated typing dots
+
+	// Ref to store the timeout ID
+	const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+
+	// Update typing status in RTDB
+	const updateTypingStatus = async (isTyping: boolean) => {
+		const typingRef = ref(
+			rtdb,
+			`dm/${friendUsername}/${currentUsername}/typing`,
+		);
+		await set(typingRef, isTyping);
+	};
+
+	// Handle input change and typing status
+	const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const inputValue = e.target.value;
+		setMessage(inputValue); // Update message state
+	
+		if (!isTyping) {
+			setIsTyping(true);
+			updateTypingStatus(true); // User started typing
+		}
+	
+		// Reset typing timeout on each keystroke
+		if (typingTimeout.current) {
+			clearTimeout(typingTimeout.current);
+		}
+	
+		// Set a new timeout to stop typing after 2 seconds of inactivity
+		typingTimeout.current = setTimeout(() => {
+			setIsTyping(false);
+			updateTypingStatus(false); // User stopped typing
+		}, 2000); // 2 seconds
+	};
+	
+
+	// Listen to friend's typing status from RTDB
+	useEffect(() => {
+		const typingRef = ref(
+			rtdb,
+			`dm/${currentUsername}/${friendUsername}/typing`,
+		);
+		const unsubscribe = onValue(typingRef, (snapshot) => {
+			const typingStatus = snapshot.val();
+			setIsFriendTyping(typingStatus);
+		});
+
+		return () => unsubscribe(); // Cleanup listener on component unmount
+	}, [currentUsername, friendUsername]);
+
+	// Animate the typing dots (up to 3 dots)
+	useEffect(() => {
+		if (isFriendTyping) {
+			const interval = setInterval(() => {
+				setTypingDots((prev) => (prev.length < 3 ? prev + "." : "."));
+			}, 500); // Change every 500ms
+
+			return () => clearInterval(interval); // Cleanup the interval
+		}
+	}, [isFriendTyping]);
+
 	useEffect(() => {
 		const handleScroll = () => {
 			if (chatRef.current) {
@@ -107,7 +179,7 @@ const Chat: React.FC<ChatProps> = ({
 
 	useEffect(() => {
 		if (isDM && friendUsername) {
-			const chatPath = `dm/${currentUsername}/${friendUsername}`;
+			const chatPath = `dm/${currentUsername}/${friendUsername}/messages/`;
 			const messagesRef = ref(rtdb, chatPath);
 
 			const listener = onValue(messagesRef, (snapshot: DataSnapshot) => {
@@ -143,7 +215,6 @@ const Chat: React.FC<ChatProps> = ({
 			}, 100); // 100ms delay to ensure content is fully loaded
 		}
 	}, [messages]);
-	
 
 	// Format message timestamp
 	const formatTimestamp = (timestamp: number) => {
@@ -181,7 +252,7 @@ const Chat: React.FC<ChatProps> = ({
 			// Push message to recipient's chat and get the ID
 			const recipientChatRef = ref(
 				rtdb,
-				`dm/${friendUsername}/${currentUsername}`,
+				`dm/${friendUsername}/${currentUsername}/messages/`,
 			);
 			const recipientMessageRef = push(recipientChatRef);
 			await set(recipientMessageRef, {
@@ -192,7 +263,7 @@ const Chat: React.FC<ChatProps> = ({
 			// Push message to sender's chat and get the ID
 			const senderChatRef = ref(
 				rtdb,
-				`dm/${currentUsername}/${friendUsername}`,
+				`dm/${currentUsername}/${friendUsername}/messages/`,
 			);
 			const senderMessageRef = push(senderChatRef);
 			await set(senderMessageRef, {
@@ -202,6 +273,9 @@ const Chat: React.FC<ChatProps> = ({
 			});
 
 			// Reset message input and hide GIF picker
+			// Reset typing status after sending the message
+			setIsTyping(false);
+			updateTypingStatus(false);
 			setReplyingTo(null); // Clear reply state
 			setShowEmojiPicker(false);
 			setMessage("");
@@ -272,11 +346,11 @@ const Chat: React.FC<ChatProps> = ({
 				// References for both sender and recipient chats
 				const senderRef = ref(
 					rtdb,
-					`dm/${currentUsername}/${friendUsername}/${id}`,
+					`dm/${currentUsername}/${friendUsername}/messages/${id}`,
 				);
 				const recipientRef = ref(
 					rtdb,
-					`dm/${friendUsername}/${currentUsername}/${recipientId}`,
+					`dm/${friendUsername}/${currentUsername}/messages/${recipientId}`,
 				);
 
 				// Remove message from both chats
@@ -285,7 +359,7 @@ const Chat: React.FC<ChatProps> = ({
 				// Reference only for the current user's chat
 				const userRef = ref(
 					rtdb,
-					`dm/${currentUsername}/${friendUsername}/${id}`,
+					`dm/${currentUsername}/${friendUsername}/messages/${id}`,
 				);
 				await remove(userRef);
 			}
@@ -546,6 +620,13 @@ const Chat: React.FC<ChatProps> = ({
 				)}
 			</div>
 
+			{/* Display the "Friend is typing..." indicator */}
+			{isFriendTyping && (
+				<div className="p-2 text-gray-500 italic rounded-t-lg">
+					<strong>{friendUsername}</strong> is typing{typingDots}
+				</div>
+			)}
+
 			{/* Reply Indicator */}
 			{replyingTo && (
 				<div className="p-2 bg-gray-800 text-white rounded-t-lg">
@@ -585,7 +666,7 @@ const Chat: React.FC<ChatProps> = ({
 					placeholder="Type your message..."
 					value={message}
 					maxLength={MAX_MESSAGE_LENGTH}
-					onChange={(e) => setMessage(e.target.value)}
+					onChange={handleTyping} // Call handleTyping on every keystroke
 					onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
 					className="flex-1 input input-bordered text-white bg-gray-800"
 				/>
@@ -695,7 +776,7 @@ const Chat: React.FC<ChatProps> = ({
 										<path d="M375.93-211.67q-43.29 0-74.23-30.94-30.94-30.94-30.94-74.24v-481.3q0-43.3 30.94-74.24 30.94-30.94 74.23-30.94h385.31q43.29 0 74.11 30.94t30.82 74.24v481.3q0 43.3-30.82 74.24-30.82 30.94-74.11 30.94H375.93Zm0-105.18h385.31v-481.3H375.93v481.3ZM198.76-34.74q-43.29 0-74.11-30.82t-30.82-74.11v-533.9q0-21.63 15.24-37.11 15.25-15.47 37.01-15.47 21.77 0 37.22 15.47 15.46 15.48 15.46 37.11v533.9h437.89q21.64 0 37.12 15.24 15.47 15.25 15.47 37.01 0 21.77-15.47 37.22-15.48 15.46-37.12 15.46H198.76Zm177.17-282.11v-481.3 481.3Z" />
 									</svg>
 								)}
-								{isCopied ? "⠀Copied!" : "⠀Copy"}
+								{isCopied ? "⠀Copied!" : "⠀Copy Text"}
 							</li>
 						)}
 

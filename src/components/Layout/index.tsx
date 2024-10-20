@@ -31,7 +31,7 @@ export const Layout: FC<ILayout> = ({ children }) => {
 	return (
 		<>
 			<Titlebar />
-			<div>{children}</div>
+			<div className="rounded-lg">{children}</div>
 		</>
 	);
 };

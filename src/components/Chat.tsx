@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import React from "react";
-import { rtdb, storage } from "../pages/FirebaseConfig";
+import { rtdb, storage, Tenor } from "../pages/FirebaseConfig";
 import { FaMicrophone, FaStop } from "react-icons/fa";
 import { FaPlay, FaPause, FaVolumeUp, FaVolumeDown } from "react-icons/fa"; // Optional icons
 import ReactAudioPlayer from "react-audio-player";
@@ -802,7 +802,7 @@ const Chat: React.FC<ChatProps> = ({
 				{showGifPicker && (
 					<div className="absolute bottom-16 left-3 z-50">
 						<GifPicker
-							tenorApiKey="AIzaSyAdR-HqdHJaxyWFkiSijrOQdxICQyzy4Wc"
+							tenorApiKey={Tenor}
 							onGifClick={handleGifSelect}
 							theme={Theme.DARK}
 						/>

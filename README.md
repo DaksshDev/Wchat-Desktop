@@ -59,6 +59,7 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app); // Initialize Storage
 export const rtdb = getDatabase(app); // Initialize Realtime Database
+export const Tenor = (""); // Enter your Tenor apikey here. Get One from Google Cloud
 
 export default firebaseConfig;
 </code></pre>

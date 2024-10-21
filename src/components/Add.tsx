@@ -3,6 +3,7 @@ import {
 	collection,
 	query,
 	where,
+	setDoc,
 	getDocs,
 	getDoc,
 	updateDoc,
@@ -115,94 +116,125 @@ export const Add: React.FC<AddProps> = ({
 
 	const handleCreateGroup = async () => {
 		if (!groupName || !groupID) {
-			toggleModal();
-			setIsGroupModalVisible(false);
-			setShowToast(true);
-			setToastMessage("Please enter a group name and ID");
-			resetModalFields();
-			return;
+		  toggleModal();
+		  setIsGroupModalVisible(false);
+		  setShowToast(true);
+		  setToastMessage("Please enter a group name and ID");
+		  resetModalFields();
+		  return;
 		}
-
+	  
+		if (selectedMembers.length < 1) {
+		  setShowToast(true);
+		  setToastMessage("Please select at least 2 members for the group");
+		  return;
+		}
+	  
 		let groupPicUrl = avatarURL; // Fallback to general avatar URL
-
+	  
 		try {
-			if (groupPhoto) {
-				// Upload the provided group photo to Firebase Storage
-				const storagePath = `groupPhotos/${groupID}/${groupPhoto.name}`;
-				const imageRef = sref(storage, storagePath);
-				const uploadResult = await uploadBytes(imageRef, groupPhoto);
-				groupPicUrl = await getDownloadURL(uploadResult.ref);
-			} else {
-				// Fetch default avatar based on the group name
-				const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${groupName}&background=random&size=512`;
-
-				// Fetch the image blob from the URL
-				const response = await fetch(defaultAvatarUrl);
-				const blob = await response.blob();
-
-				// Upload the default avatar to Firebase Storage
-				const storagePath = `groupPhotos/${groupID}/default_avatar.png`;
-				const imageRef = sref(storage, storagePath);
-				const uploadResult = await uploadBytes(imageRef, blob);
-				groupPicUrl = await getDownloadURL(uploadResult.ref);
-			}
+		  if (groupPhoto) {
+			// Upload the provided group photo to Firebase Storage
+			const storagePath = `groupPhotos/${groupID}/${groupPhoto.name}`;
+			const imageRef = sref(storage, storagePath);
+			const uploadResult = await uploadBytes(imageRef, groupPhoto);
+			groupPicUrl = await getDownloadURL(uploadResult.ref);
+		  } else {
+			// Fetch default avatar based on the group name
+			const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${groupName}&background=random&size=512`;
+			const response = await fetch(defaultAvatarUrl);
+			const blob = await response.blob();
+	  
+			// Upload the default avatar to Firebase Storage
+			const storagePath = `groupPhotos/${groupID}/default_avatar.png`;
+			const imageRef = sref(storage, storagePath);
+			const uploadResult = await uploadBytes(imageRef, blob);
+			groupPicUrl = await getDownloadURL(uploadResult.ref);
+		  }
 		} catch (error) {
-			console.error("Error uploading group photo:", error);
-			toggleModal();
-			resetModalFields();
-			setIsGroupModalVisible(false);
-			setShowToast(true);
-			setToastMessage("Failed to upload group photo");
-			return;
+		  console.error("Error uploading group photo:", error);
+		  toggleModal();
+		  resetModalFields();
+		  setIsGroupModalVisible(false);
+		  setShowToast(true);
+		  setToastMessage("Failed to upload group photo");
+		  return;
 		}
-
+	  
 		// Check if the group ID already exists
 		const groupRef = ref(rtdb, `groups/${groupID}`);
 		const groupSnapshot = await get(groupRef);
-
+	  
 		if (groupSnapshot.exists()) {
-			toggleModal();
-			setIsGroupModalVisible(false);
-			resetModalFields();
-			setShowToast(true);
-			setToastMessage("Group ID already exists!");
-			return;
+		  toggleModal();
+		  setIsGroupModalVisible(false);
+		  resetModalFields();
+		  setShowToast(true);
+		  setToastMessage("Group ID already exists!");
+		  return;
 		}
-
+	  
 		// Create the group data object
 		const groupData: GroupData = {
-			name: groupName,
-			id: groupID,
-			description: groupDescription,
-			photoURL: groupPicUrl,
-			members: {}, // Initialize an empty object for members
+		  name: groupName,
+		  id: groupID,
+		  description: groupDescription,
+		  photoURL: groupPicUrl, // Set the group photo URL here
+		  members: {},
 		};
-
-		// Add each selected member with a 'messages' child inside their entry
+	  
+		const currentUser = currentUsername; // Function to get the current user
+		groupData.members[currentUser] = {
+		  joinedAt: new Date().toISOString(),
+		  role: "ADMIN", // Current user is the admin
+		  messages: {},
+		};
+	  
+		// Add other selected members with null roles
 		selectedMembers.forEach((member) => {
-			groupData.members[member] = {
-				joinedAt: new Date().toISOString(),
-				messages: {}, // Initialize an empty object for messages
-			};
+		  groupData.members[member] = {
+			joinedAt: new Date().toISOString(),
+			role: null, // Role can be assigned later
+			messages: {}, // Initialize an empty object for messages
+		  };
 		});
-
+	  
 		try {
-			await set(groupRef, groupData);
-			setShowToast(true);
-			setToastMessage("Group created successfully!");
-			resetModalFields();
-			setIsGroupModalVisible(false);
-			toggleModal(); // Close the modal after successful creation
+		  // Add the group to the Realtime Database
+		  await set(groupRef, groupData);
+	  
+		  // Add group to each member's Firestore 'serverlist' subcollection
+		  const allMembers = [...selectedMembers, currentUser]; // Include current user
+	  
+		  const serverData = {
+			groupName: groupName,
+			groupID: groupID,
+			groupPicUrl: groupPicUrl, // Include the group photo URL in the serverlist data
+		  };
+	  
+		  const promises = allMembers.map(async (member) => {
+			const userDocRef = doc(db, `users/${member}/serverlist/${groupID}`);
+			await setDoc(userDocRef, serverData);
+		  });
+	  
+		  await Promise.all(promises); // Wait for all member updates
+	  
+		  setShowToast(true);
+		  setToastMessage("Group created successfully!");
+		  resetModalFields();
+		  setIsGroupModalVisible(false);
+		  toggleModal(); // Close the modal after successful creation
 		} catch (error) {
-			console.error("Error creating group:", error);
-			setIsGroupModalVisible(false);
-			resetModalFields();
-			toggleModal();
-			setShowToast(true);
-			setToastMessage("Failed to create group");
+		  console.error("Error creating group:", error);
+		  setIsGroupModalVisible(false);
+		  resetModalFields();
+		  toggleModal();
+		  setShowToast(true);
+		  setToastMessage("Failed to create group");
 		}
-	};
-
+	  };	  
+	
+	
 	// Helper function to reset the modal input fields
 	const resetModalFields = () => {
 		setGroupName("");

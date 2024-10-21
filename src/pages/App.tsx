@@ -1,20 +1,37 @@
 import { FC, useEffect, useState, useCallback, useRef } from "react";
-import { db } from "./FirebaseConfig";
+import { db, rtdb } from "./FirebaseConfig";
 import {
 	doc,
 	getDoc,
+	getDocs,
+	collection,
 	DocumentData,
 	arrayRemove,
 	arrayUnion,
 	updateDoc,
+	QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { Layout } from "../components/Layout";
 import { useNavigate } from "react-router-dom"; // Make sure you're using React Router for navigation
 import { QRCodeGenerator } from "../components/QRCodeGenerator";
 import GreetingWithBlob from "../components/GreetingWithBlob";
+import { ref, get, child } from "firebase/database";
 import Asthetic from "../components/Asthetic";
 import { Add } from "../components/Add";
 import Chat from "../components/Chat"; // Adjust the path based on your folder structure
+import GroupChat from "../components/GroupChat"; // Adjust the path based on your folder structure
+
+interface Member {
+	username: string;
+	profilePicUrl: string;
+  }
+  
+  interface Server {
+	id: string;
+	groupName: string;
+	groupPicUrl: string;
+	members: Member[]; // Store members here
+  }
 
 interface FriendRequest {
 	username: string;
@@ -38,6 +55,7 @@ export const AppPage: FC = () => {
 	const [currentDate, setCurrentDate] = useState("");
 	const [currentTime, setCurrentTime] = useState("");
 	const [isContextOpen, setIsContextOpen] = useState(false);
+	const [serverList, setServerList] = useState<Server[]>([]); // Explicitly type the state
 
 	const currentUsername = localStorage.getItem("username");
 	const welcomeusername: string = currentUsername ?? "UNDEFINED";
@@ -54,14 +72,23 @@ export const AppPage: FC = () => {
 	const [friendInfo, setFriendInfo] = useState<DocumentData | null>(null);
 	const [activeChat, setActiveChat] = useState<null | {
 		username: string;
-		isGroup: boolean;
 		friendPic?: string | null; // Add friendPic to ActiveChat
 		currentUserPic?: string | null;
+	}>(null);
+
+	const [activeGroupChat, setActiveGroupChat] = useState<null | {
+		groupName: string;
+		groupId: string;
+		groupPicUrl: string;
+		members: Member[];
+		currentUsername: string;
+		currentUserPic: string;
 	}>(null);
 	// Inside your component
 	const contextMenuRef = useRef<HTMLDivElement | null>(null);
 
 	const [activeFriend, setActiveFriend] = useState<string | null>(null);
+	const [activeGroup, setActiveGroup] = useState<string | null>(null);
 
 	// Function to fetch the friend's profile picture from Firestore
 	async function getFriendProfilePic(
@@ -83,6 +110,52 @@ export const AppPage: FC = () => {
 			return null;
 		}
 	}
+
+	useEffect(() => {
+		const fetchServerList = async () => {
+		  try {
+			const serverlistRef = collection(db, `users/${currentUsername}/serverlist`);
+			const serverSnapshot = await getDocs(serverlistRef);
+	  
+			const servers = await Promise.all(
+			  serverSnapshot.docs.map(async (serverDoc: QueryDocumentSnapshot<DocumentData>) => {
+				const serverData = serverDoc.data() as { groupName: string; groupPicUrl: string };
+				const serverId = serverDoc.id;
+	  
+				// Fetch members from RTDB using server ID
+				const membersRef = ref(rtdb, `groups/${serverId}/members`);
+				const membersSnapshot = await get(membersRef);
+	  
+				const members: Member[] = await Promise.all(
+				  Object.keys(membersSnapshot.val() || {}).map(async (username) => {
+					const userDocRef = doc(db, `users/${username}`);
+					const userDoc = await getDoc(userDocRef);
+					const userData = userDoc.data() as { profilePicUrl?: string };
+	  
+					return {
+					  username,
+					  profilePicUrl: userData?.profilePicUrl || "", // Fallback if no profilePicUrl exists
+					};
+				  })
+				);
+	  
+				return {
+				  id: serverId,
+				  groupName: serverData.groupName,
+				  groupPicUrl: serverData.groupPicUrl,
+				  members,
+				};
+			  })
+			);
+	  
+			setServerList(servers);
+		  } catch (error) {
+			console.error("Error fetching server list:", error);
+		  }
+		};
+	  
+		fetchServerList();
+	  }, [currentUsername]);
 
 	// Fetch profile picture if not already set when `activeChat` changes
 	useEffect(() => {
@@ -771,6 +844,28 @@ export const AppPage: FC = () => {
 				</div>
 			)}
 
+			{activeGroupChat && (
+				<div className="fixed inset-0 top-10 left-16 bg-black rounded-lg overflow-hidden shadow-lg z-40">
+					<GroupChat
+						groupName={activeGroupChat.groupName}
+						members={
+							activeGroupChat.members.map((member) => ({
+							  memberName: member.username,
+							  memberProfilePicUrl: member.profilePicUrl || "", // Ensure a fallback value
+							}))
+						  }					  
+						groupId={activeGroupChat.groupId}
+						groupPicUrl={activeGroupChat.groupPicUrl}
+						currentUserPic={userInfo?.profilePicUrl}
+						onClose={() => {
+							setActiveGroupChat(null);
+							setCurrentView("friends");
+						}}
+						currentUsername={userInfo?.username}
+					/>
+				</div>
+			)}
+
 			{/* Main wrapper to hold both the sidebar and content */}
 			<div className="flex">
 				{/* Sidebar (Discord-like) */}
@@ -814,44 +909,37 @@ export const AppPage: FC = () => {
 					<br></br>
 					{/* Server icons with tooltips */}
 					<div className="space-y-4 mt-4 flex flex-col items-center justify-center font-helvetica">
-						<div
-							className="tooltip tooltip-right z-50"
-							data-tip="Group 1"
-						>
-							<div className="rounded-full w-12 h-12 shadow-md hover:shadow-blue-500/50 bg-gray-500 hover:opacity-80 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease-linear">
-								<img
-									src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-									alt="Server 1"
-									className="w-12 h-12 object-cover"
-								/>
+						{serverList.map((server) => (
+							<div
+								key={server.id}
+								className="tooltip tooltip-right z-50"
+								data-tip={server.groupName}
+							>
+								<div
+									className="rounded-full w-12 h-12 shadow-md hover:shadow-blue-500/50 bg-gray-500 hover:opacity-80 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease-linear"
+									onClick={() => {
+										setActiveGroupChat({
+												groupName: server.groupName, // Fallback if groupName is missing
+												groupId: server.id, // Group ID is required
+												groupPicUrl: server.groupPicUrl || "", // Fallback to empty string if no groupPicUrl
+												members: server.members.length ? server.members : [], // Ensure members is an array
+												currentUsername: userInfo?.username, // Pass the current user's name
+												currentUserPic: userInfo?.profilePicUrl, // Pass the current user's picture URL
+										}); // or isGroup: true if it's a group
+										setCurrentView(null); // Make sure to call the setter function to update state
+									}}
+								>
+									<img
+										src={
+											server.groupPicUrl ||
+											"https://ui-avatars.com/api/?name=default&background=random&size=512"
+										} // Fallback to default if no image
+										alt={server.groupName}
+										className="w-12 h-12 object-cover"
+									/>
+								</div>
 							</div>
-						</div>
-
-						<div
-							className="tooltip tooltip-right z-50"
-							data-tip="Group 2"
-						>
-							<div className="rounded-full w-12 h-12 shadow-md hover:shadow-blue-500/50 bg-gray-500 hover:opacity-80 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease">
-								<img
-									src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-									alt="Server 2"
-									className="w-12 h-12 object-cover"
-								/>
-							</div>
-						</div>
-
-						<div
-							className="tooltip tooltip-right z-50"
-							data-tip="Group 3"
-						>
-							<div className="rounded-full w-12 h-12 bg-gray-500 shadow-md hover:shadow-blue-500/50 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease">
-								<img
-									src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
-									alt="Server 3"
-									className="w-12 h-12 object-cover"
-								/>
-							</div>
-						</div>
+						))}
 					</div>
 				</div>
 
@@ -1055,10 +1143,11 @@ export const AppPage: FC = () => {
 
 												<span className="ml-20 pl-20  group-hover/item:visible invisible">
 													Click On
-												<kbd className="kbd kbd-xs mx-2">
-													⋮
-												</kbd>
-													button to open chatting options.
+													<kbd className="kbd kbd-xs mx-2">
+														⋮
+													</kbd>
+													button to open chatting
+													options.
 												</span>
 											</span>
 
@@ -1101,7 +1190,6 @@ export const AppPage: FC = () => {
 												onClick={() => {
 													setActiveChat({
 														username: activeFriend,
-														isGroup: false,
 													}); // or isGroup: true if it's a group
 													closeContextMenu();
 													setCurrentView(null); // Make sure to call the setter function to update state

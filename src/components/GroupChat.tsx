@@ -160,38 +160,58 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	};
 
 	useEffect(() => {
-		if (groupId) {
-			const typingRef = ref(rtdb, `groups/${groupId}/typing`);
+		if (groupId && members.length > 0) {
+			// Create listeners for each member's typing status
+			const unsubscribeList = members.map((member) => {
+				const typingRef = ref(
+					rtdb,
+					`groups/${groupId}/members/${member.memberName}/typing`,
+				);
 
-			// Listener for the typing status in the group
-			const unsubscribe = onValue(typingRef, (snapshot) => {
-				const typingStatus = snapshot.val();
-				if (typingStatus) {
-					// typingStatus should be an array of member names
-					setTypingMembers(
-						Object.keys(typingStatus).filter(
-							(member) => typingStatus[member],
-						),
-					);
-				} else {
-					setTypingMembers([]); // Clear if no one is typing
-				}
+				// Listener for each member's typing status
+				return onValue(typingRef, (snapshot) => {
+					const typingStatus = snapshot.val();
+					setTypingMembers((prevTypingMembers) => {
+						if (typingStatus) {
+							// Add member to the typing members list if they're typing
+							if (
+								!prevTypingMembers.includes(member.memberName)
+							) {
+								return [
+									...prevTypingMembers,
+									member.memberName,
+								];
+							}
+						} else {
+							// Remove member if they're no longer typing
+							return prevTypingMembers.filter(
+								(m) => m !== member.memberName,
+							);
+						}
+						return prevTypingMembers;
+					});
+				});
 			});
 
-			return () => unsubscribe(); // Cleanup listener on component unmount
+			// Cleanup listeners on component unmount
+			return () =>
+				unsubscribeList.forEach((unsubscribe) => unsubscribe());
 		}
-	}, [groupId]);
+	}, [groupId, members]);
 
-	// Animate the typing dots (up to 3 dots)
+	// Animate the typing dots based on group typing status
 	useEffect(() => {
-		if (isFriendTyping) {
+		// Check if any member is typing
+		if (typingMembers.length > 0) {
 			const interval = setInterval(() => {
 				setTypingDots((prev) => (prev.length < 3 ? prev + "." : "."));
 			}, 500); // Change every 500ms
 
 			return () => clearInterval(interval); // Cleanup the interval
+		} else {
+			setTypingDots(""); // Reset typing dots if no one is typing
 		}
-	}, [isFriendTyping]);
+	}, [typingMembers]);
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -804,7 +824,6 @@ const GroupChat: React.FC<GroupChatProps> = ({
 				</div>
 			)}
 
-			{/* Display the "Members are typing..." indicator */}
 			{/* Display the "Members are typing..." indicator */}
 			{typingMembers.length > 0 && (
 				<div className="p-2 text-gray-500 italic rounded-t-lg">

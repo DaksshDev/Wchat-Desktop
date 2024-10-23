@@ -63,6 +63,7 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	const [adminUsername, setAdminUsername] = useState<string[]>([]);
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [showRoleMenu, setShowRoleMenu] = useState(false);
+	const [modUsernames, setModUsernames] = useState<string[]>([]);
 
 	const handleBan = () => {
 		console.log(`Banning`);
@@ -134,6 +135,47 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		}
 	};
 
+	const getMods = async (groupId: string): Promise<string[]> => {
+		try {
+			const membersRef = ref(rtdb, `groups/${groupId}/members`);
+			const snapshot = await get(membersRef);
+
+			if (snapshot.exists()) {
+				const members = snapshot.val();
+				const mods = [];
+
+				// Collect usernames of members with the MOD role
+				for (const username in members) {
+					if (members[username].role === "MOD") {
+						mods.push(username);
+					}
+				}
+				return mods; // Return array of moderator usernames
+			}
+
+			return []; // No mods found
+		} catch (error) {
+			console.error("Error fetching mods:", error);
+			return [];
+		}
+	};
+
+	useEffect(() => {
+		const fetchMods = async () => {
+			if (groupId) {
+				const mods = await getMods(groupId);
+				setModUsernames(mods); // Store the mod usernames in state
+			}
+		};
+
+		fetchMods();
+
+		const intervalId = setInterval(fetchMods, 2000); // Fetch every 2 seconds
+
+		return () => clearInterval(intervalId); // Cleanup on unmount or when groupId changes
+
+	}, [groupId]); // Runs whenever the groupId changes
+
 	useEffect(() => {
 		const fetchAdmins = async () => {
 			if (groupId) {
@@ -143,6 +185,11 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		};
 
 		fetchAdmins();
+
+		const intervalId = setInterval(fetchAdmins, 2000); // Fetch every 2 seconds
+
+		return () => clearInterval(intervalId); // Cleanup on unmount or when groupId changes
+		
 	}, [groupId]); // Runs whenever the groupId changes
 
 	// Ref to store the timeout ID
@@ -582,7 +629,11 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			{isDrawerOpen && (
 				<div
 					className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-40"
-					onClick={() => setIsDrawerOpen(false)} // Clicking outside will close the drawer
+					onClick={() => {
+						setIsDrawerOpen(false);
+						setShowMemberContextMenu(null);
+					}}
+					// Clicking outside will close the drawer
 				></div>
 			)}
 
@@ -648,6 +699,56 @@ const GroupChat: React.FC<GroupChatProps> = ({
 						</div>
 					</div>
 
+					{/* Mods Section */}
+					<div
+						tabIndex={0}
+						className="collapse collapse-open bg-neutral-900 text-white rounded-lg mb-4"
+					>
+						<input
+							type="checkbox"
+							className="peer"
+							id="mods-collapse"
+						/>
+						<label
+							htmlFor="mods-collapse"
+							className="collapse-title text-xl font-semibold"
+						>
+							Moderators
+						</label>
+						<div className="collapse-content">
+							{modUsernames.length > 0 && (
+								<div className="flex flex-col space-y-2 p-2">
+									{modUsernames.map((modUsername) => {
+										const member = members.find(
+											(m) => m.memberName === modUsername,
+										);
+										return (
+											<div
+												key={modUsername}
+												className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
+											>
+												<img
+													src={
+														member?.memberProfilePicUrl ||
+														"https://ui.avatar.com/default"
+													}
+													alt={`${modUsername}'s Profile`}
+													className="w-10 h-10 rounded-full"
+												/>
+												<span className="text-lg font-medium">
+													{modUsername} 🛠️{" "}
+													{modUsername ===
+														currentUsername &&
+														"--(YOU)"}
+												</span>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+					</div>
+
 					{/* Members Section */}
 					<div
 						tabIndex={0}
@@ -666,12 +767,10 @@ const GroupChat: React.FC<GroupChatProps> = ({
 						</label>
 						<div className="collapse-content">
 							{members
-								.filter(
-									(member) =>
-										!adminUsername.includes(
-											member.memberName,
-										), // Exclude all admins
-								)
+								.filter((member) =>
+									!adminUsername.includes(member.memberName) && // Exclude all admins
+									!modUsernames.includes(member.memberName) // Exclude all mods
+								)								
 								.map((member, index) => (
 									<div
 										key={index}
@@ -704,89 +803,110 @@ const GroupChat: React.FC<GroupChatProps> = ({
 					{/* Close Button */}
 					<button
 						className="btn bg-white text-neutral-900 mt-6 rounded-lg w-full hover:bg-neutral-800 hover:text-white"
-						onClick={() => setIsDrawerOpen(false)}
+						onClick={() => {
+							setIsDrawerOpen(false);
+							setShowMemberContextMenu(null);
+						}}
 					>
 						Close
 					</button>
 				</div>
 			</div>
 
-			{/* Show context menu only if current user is an admin */}
-			{showMemberContextMenu &&
-				adminUsername.includes(currentUsername) && (
-					<div
-						className="absolute z-50 bg-gray-800 text-white p-2 rounded-lg shadow-lg"
-						style={{
-							top: `${showMemberContextMenu.y}px`,
-							left: `${showMemberContextMenu.x}px`,
-						}}
-						onMouseLeave={() => setShowMemberContextMenu(null)}
-					>
-						<ul>
-							{/* Ban Option */}
-							<li
-								className="p-2 hover:bg-red-600 cursor-pointer"
-								onClick={handleBan}
-							>
-								Ban
-							</li>
+			{/* Show context menu based on user role */}
+			{showMemberContextMenu && (
+				<div
+					className="absolute z-50 bg-gray-800 text-white p-2 rounded-lg shadow-lg"
+					style={{
+						top: `${showMemberContextMenu.y - 170}px`,
+						left: `${showMemberContextMenu.x - 70}px`,
+					}}
+					onMouseLeave={() => setShowMemberContextMenu(null)}
+				>
 
-							{/* Kick Option */}
-							<li
-								className="p-2 hover:bg-orange-600 cursor-pointer"
-								onClick={handleKick}
-							>
-								Kick
-							</li>
+					<ul>
+						{/* Admin Options */}
+						{adminUsername.includes(currentUsername) && (
+							<>
+								<li
+									className="p-2 hover:bg-red-600 cursor-pointer rounded-lg"
+									onClick={handleBan}
+								>
+									Ban
+								</li>
+								<li
+									className="p-2 hover:bg-orange-600 cursor-pointer rounded-lg"
+									onClick={handleKick}
+								>
+									Kick
+								</li>
+								<li
+									className="p-2 hover:bg-blue-600 cursor-pointer relative rounded-lg" 
+									onMouseEnter={() => setShowRoleMenu(true)}
+									onMouseLeave={() => setShowRoleMenu(false)}
+								>
+									Set Role
+									{showRoleMenu && (
+										<ul className="absolute left-full top-0 ml-2 bg-gray-700 text-white p-2 rounded-lg shadow-lg">
+											<li
+												className="p-2 hover:bg-blue-600 cursor-pointer rounded-lg"
+												onClick={() =>
+													changeRole(
+														selectedMember,
+														"ADMIN",
+													)
+												}
+											>
+												Admin
+											</li>
+											<li
+												className="p-2 hover:bg-yellow-600 cursor-pointer rounded-lg"
+												onClick={() =>
+													changeRole(
+														selectedMember,
+														"MOD",
+													)
+												}
+											>
+												Mod
+											</li>
+											<li
+												className="p-2 hover:bg-neutral-800 cursor-pointer rounded-lg"
+												onClick={() =>
+													changeRole(
+														selectedMember,
+														"Member",
+													)
+												}
+											>
+												Member
+											</li>
+										</ul>
+									)}
+								</li>
+							</>
+						)}
 
-							{/* Set Role Option */}
-							<li
-								className="p-2 hover:bg-blue-600 cursor-pointer relative"
-								onMouseEnter={() => setShowRoleMenu(true)}
-								onMouseLeave={() => setShowRoleMenu(false)}
-							>
-								Set Role
-								{showRoleMenu && (
-									<ul className="absolute left-full top-0 ml-2 bg-gray-700 text-white p-2 rounded-lg shadow-lg">
-										<li
-											className="p-2 hover:bg-green-600 cursor-pointer"
-											onClick={() =>
-												changeRole(
-													selectedMember,
-													"ADMIN",
-												)
-											}
-										>
-											Admin
-										</li>
-										<li
-											className="p-2 hover:bg-yellow-600 cursor-pointer"
-											onClick={() =>
-												changeRole(
-													selectedMember,
-													"Mod",
-												)
-											}
-										>
-											Mod
-										</li>
-										<li
-											className="p-2 hover:bg-gray-600 cursor-pointer"
-											onClick={() =>
-												changeRole(
-													selectedMember,
-													"Member",
-												)
-											}
-										>
-											Member
-										</li>
-									</ul>
-								)}
-							</li>
-						</ul>
-					</div>
-				)}
+						{/* Mod Options */}
+						{modUsernames.includes(currentUsername) && (
+							<>
+								<li
+									className="p-2 hover:bg-red-600 cursor-pointer"
+									onClick={handleBan}
+								>
+									Ban
+								</li>
+								<li
+									className="p-2 hover:bg-orange-600 cursor-pointer"
+									onClick={handleKick}
+								>
+									Kick
+								</li>
+							</>
+						)}
+					</ul>
+				</div>
+			)}
 
 			{/* Navbar */}
 			<div className="flex items-center justify-between p-4 bg-neutral-900 text-white shadow-md rounded-lg">

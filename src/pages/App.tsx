@@ -20,18 +20,20 @@ import Asthetic from "../components/Asthetic";
 import { Add } from "../components/Add";
 import Chat from "../components/Chat"; // Adjust the path based on your folder structure
 import GroupChat from "../components/GroupChat"; // Adjust the path based on your folder structure
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 
 interface Member {
 	username: string;
 	profilePicUrl: string;
-  }
-  
-  interface Server {
+}
+
+interface Server {
 	id: string;
 	groupName: string;
 	groupPicUrl: string;
 	members: Member[]; // Store members here
-  }
+}
 
 interface FriendRequest {
 	username: string;
@@ -113,49 +115,72 @@ export const AppPage: FC = () => {
 
 	useEffect(() => {
 		const fetchServerList = async () => {
-		  try {
-			const serverlistRef = collection(db, `users/${currentUsername}/serverlist`);
-			const serverSnapshot = await getDocs(serverlistRef);
-	  
-			const servers = await Promise.all(
-			  serverSnapshot.docs.map(async (serverDoc: QueryDocumentSnapshot<DocumentData>) => {
-				const serverData = serverDoc.data() as { groupName: string; groupPicUrl: string };
-				const serverId = serverDoc.id;
-	  
-				// Fetch members from RTDB using server ID
-				const membersRef = ref(rtdb, `groups/${serverId}/members`);
-				const membersSnapshot = await get(membersRef);
-	  
-				const members: Member[] = await Promise.all(
-				  Object.keys(membersSnapshot.val() || {}).map(async (username) => {
-					const userDocRef = doc(db, `users/${username}`);
-					const userDoc = await getDoc(userDocRef);
-					const userData = userDoc.data() as { profilePicUrl?: string };
-	  
-					return {
-					  username,
-					  profilePicUrl: userData?.profilePicUrl || "", // Fallback if no profilePicUrl exists
-					};
-				  })
+			try {
+				const serverlistRef = collection(
+					db,
+					`users/${currentUsername}/serverlist`,
 				);
-	  
-				return {
-				  id: serverId,
-				  groupName: serverData.groupName,
-				  groupPicUrl: serverData.groupPicUrl,
-				  members,
-				};
-			  })
-			);
-	  
-			setServerList(servers);
-		  } catch (error) {
-			console.error("Error fetching server list:", error);
-		  }
+				const serverSnapshot = await getDocs(serverlistRef);
+
+				const servers = await Promise.all(
+					serverSnapshot.docs.map(
+						async (
+							serverDoc: QueryDocumentSnapshot<DocumentData>,
+						) => {
+							const serverData = serverDoc.data() as {
+								groupName: string;
+								groupPicUrl: string;
+							};
+							const serverId = serverDoc.id;
+
+							// Fetch members from RTDB using server ID
+							const membersRef = ref(
+								rtdb,
+								`groups/${serverId}/members`,
+							);
+							const membersSnapshot = await get(membersRef);
+
+							const members: Member[] = await Promise.all(
+								Object.keys(membersSnapshot.val() || {}).map(
+									async (username) => {
+										const userDocRef = doc(
+											db,
+											`users/${username}`,
+										);
+										const userDoc = await getDoc(
+											userDocRef,
+										);
+										const userData = userDoc.data() as {
+											profilePicUrl?: string;
+										};
+
+										return {
+											username,
+											profilePicUrl:
+												userData?.profilePicUrl || "", // Fallback if no profilePicUrl exists
+										};
+									},
+								),
+							);
+
+							return {
+								id: serverId,
+								groupName: serverData.groupName,
+								groupPicUrl: serverData.groupPicUrl,
+								members,
+							};
+						},
+					),
+				);
+
+				setServerList(servers);
+			} catch (error) {
+				console.error("Error fetching server list:", error);
+			}
 		};
-	  
+
 		fetchServerList();
-	  }, [currentUsername]);
+	}, [currentUsername]);
 
 	// Fetch profile picture if not already set when `activeChat` changes
 	useEffect(() => {
@@ -604,16 +629,25 @@ export const AppPage: FC = () => {
 											{/* Aesthetic background */}
 										</div>
 										<div className="z-10 flex w-full h-full items-center p-4 space-x-6">
-											<div className="avatar">
-												<div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-													<img
-														src={
-															friendInfo?.profilePicUrl
-														}
-														alt="Profile Picture"
-													/>
-												</div>
-											</div>
+											{/* Profile Avatar with PhotoView */}
+											<PhotoProvider>
+												<PhotoView
+													src={friendInfo?.profilePicUrl}
+												>
+													<div className="flex justify-center mt-5 cursor-pointer">
+														<div className="w-24 h-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
+															<img
+																src={
+																	friendInfo?.profilePicUrl
+																}
+																alt="Profile Picture"
+																className="object-cover h-full w-full"
+															/>
+														</div>
+													</div>
+												</PhotoView>
+											</PhotoProvider>
+
 											<div className="flex flex-col justify-center text-white">
 												<h3 className="text-2xl font-semibold">
 													{friendInfo?.username}
@@ -745,17 +779,24 @@ export const AppPage: FC = () => {
 
 										{/* Profile Content */}
 										<div className="z-10 flex w-full h-full items-center p-4 space-x-6">
-											{/* Profile Avatar */}
-											<div className="avatar">
-												<div className="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-													<img
-														src={
-															userInfo.profilePicUrl
-														}
-														alt="Profile Picture"
-													/>
-												</div>
-											</div>
+											{/* Profile Avatar with PhotoView */}
+											<PhotoProvider>
+												<PhotoView
+													src={userInfo.profilePicUrl}
+												>
+													<div className="flex justify-center mt-5 cursor-pointer">
+														<div className="w-24 h-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
+															<img
+																src={
+																	userInfo.profilePicUrl
+																}
+																alt="Profile Picture"
+																className="object-cover h-full w-full"
+															/>
+														</div>
+													</div>
+												</PhotoView>
+											</PhotoProvider>
 
 											{/* Profile Info (Username, Gender, Pronouns) */}
 											<div className="flex flex-col justify-center text-white">
@@ -848,12 +889,10 @@ export const AppPage: FC = () => {
 				<div className="fixed inset-0 top-10 left-16 bg-black rounded-lg overflow-hidden shadow-lg z-40">
 					<GroupChat
 						groupName={activeGroupChat.groupName}
-						members={
-							activeGroupChat.members.map((member) => ({
-							  memberName: member.username,
-							  memberProfilePicUrl: member.profilePicUrl || "", // Ensure a fallback value
-							}))
-						  }					  
+						members={activeGroupChat.members.map((member) => ({
+							memberName: member.username,
+							memberProfilePicUrl: member.profilePicUrl || "", // Ensure a fallback value
+						}))}
 						groupId={activeGroupChat.groupId}
 						groupPicUrl={activeGroupChat.groupPicUrl}
 						currentUserPic={userInfo?.profilePicUrl}
@@ -919,12 +958,16 @@ export const AppPage: FC = () => {
 									className="rounded-full w-12 h-12 shadow-md hover:shadow-blue-500/50 bg-gray-500 hover:opacity-80 flex items-center justify-center hover:rounded-lg cursor-pointer overflow-hidden transition-all duration-300 ease-linear"
 									onClick={() => {
 										setActiveGroupChat({
-												groupName: server.groupName, // Fallback if groupName is missing
-												groupId: server.id, // Group ID is required
-												groupPicUrl: server.groupPicUrl || "", // Fallback to empty string if no groupPicUrl
-												members: server.members.length ? server.members : [], // Ensure members is an array
-												currentUsername: userInfo?.username, // Pass the current user's name
-												currentUserPic: userInfo?.profilePicUrl, // Pass the current user's picture URL
+											groupName: server.groupName, // Fallback if groupName is missing
+											groupId: server.id, // Group ID is required
+											groupPicUrl:
+												server.groupPicUrl || "", // Fallback to empty string if no groupPicUrl
+											members: server.members.length
+												? server.members
+												: [], // Ensure members is an array
+											currentUsername: userInfo?.username, // Pass the current user's name
+											currentUserPic:
+												userInfo?.profilePicUrl, // Pass the current user's picture URL
 										}); // or isGroup: true if it's a group
 										setCurrentView(null); // Make sure to call the setter function to update state
 									}}

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import React from "react";
 import { rtdb, storage, Tenor } from "../pages/FirebaseConfig";
 import { FaMicrophone, FaStop } from "react-icons/fa";
-import { FaPlay, FaPause, FaVolumeUp, FaVolumeDown } from "react-icons/fa"; // Optional icons
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 import ReactAudioPlayer from "react-audio-player";
 import ChatBg from "./ChatBg";
 import {
@@ -440,31 +441,55 @@ const Chat: React.FC<ChatProps> = ({
 		<div className="w-full h-full bg-black rounded-lg flex flex-col overflow-hidden select-none relative z-40">
 			<ChatBg />
 			{/* Navbar */}
-			<div className="flex items-center justify-between p-4 bg-gray-900 text-white shadow-md">
-				<div className="flex items-center space-x-2">
+			<div className="flex items-center justify-between p-4 bg-neutral-900 text-white shadow-md rounded-lg">
+				{/* Group Information */}
+				<div className="flex items-center space-x-4">
 					{friendUsername && (
 						<>
-							<div className="avatar">
-								<div className="w-10 rounded-full">
-									<img
-										src={friendPic}
-										alt={`${friendUsername}'s profile`}
-									/>
-								</div>
+							{/* Group Avatar with Photo Viewer */}
+							<PhotoProvider>
+								<PhotoView
+									src={
+										friendPic ||
+										"https://ui.avatar.com/default"
+									}
+								>
+									<div className="avatar cursor-pointer">
+										<div className="w-10 rounded-full ring ring-neutral-800 ring-offset-base-100 ring-offset-2">
+											<img
+												src={
+													friendPic ||
+													"https://ui.avatar.com/default"
+												}
+												alt={friendUsername}
+												className="object-cover"
+											/>
+										</div>
+									</div>
+								</PhotoView>
+							</PhotoProvider>
+
+							{/* Friend Name */}
+							<div className="flex flex-col">
+								<span className="text-lg font-semibold text-white">
+									{friendUsername}
+								</span>
 							</div>
-							<span className="text-lg font-semibold">
-								{friendUsername}
-							</span>
 						</>
 					)}
 				</div>
-				<button
-					onClick={onClose}
-					className="btn btn-ghost btn-sm text-white"
-					title="Close Chat"
-				>
-					<FaArrowRight size={24} />
-				</button>
+
+				{/* Navbar Buttons */}
+				<div className="flex items-center space-x-3">
+					{/* Close Chat Button */}
+					<button
+						onClick={onClose}
+						className="btn btn-ghost text-white"
+						title="Close Chat"
+					>
+						<FaArrowRight size={24} />
+					</button>
+				</div>
 			</div>
 
 			{/* Chat Messages */}

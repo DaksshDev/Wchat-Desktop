@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import React from "react";
 import { rtdb, storage, Tenor } from "../pages/FirebaseConfig";
-import { FaMicrophone, FaStop } from "react-icons/fa";
+import { FaMicrophone, FaStop, FaUsers } from "react-icons/fa";
 import ReactAudioPlayer from "react-audio-player";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 import ChatBg from "./ChatBg";
 import {
 	ref as storageRef,
@@ -58,6 +60,8 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	const [showGifPicker, setShowGifPicker] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 	const [adminUsername, setAdminUsername] = useState<string | null>(null);
+	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
 	const isVideoUrl = (url: string) => {
 		return ReactPlayer.canPlay(url); // Use ReactPlayer's built-in method to check if the URL is playable
 	};
@@ -83,12 +87,9 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		className: "text-blue-400 underline cursor-pointer",
 		defaultProtocol: "https", // Ensures links without protocol still work
 	};
-
 	const [isTyping, setIsTyping] = useState(false); // Whether the current user is typing
-	const [isFriendTyping, setIsFriendTyping] = useState(false); // Whether the friend is typing
 	const [typingDots, setTypingDots] = useState("."); // Animated typing dots
 	const [typingMembers, setTypingMembers] = useState<string[]>([]);
-
 	// Function to get the admin username from the RTDB
 	const getAdmin = async (groupId: string): Promise<string | null> => {
 		try {
@@ -534,41 +535,190 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	return (
 		<div className="w-full h-full bg-black rounded-lg flex flex-col overflow-hidden select-none relative z-40">
 			<ChatBg />
-			{/* Navbar */}
-			<div className="flex items-center justify-between p-4 bg-gray-900 text-white shadow-md">
-				<div className="flex flex-col space-y-2">
-					<div className="flex items-center space-x-2">
-						{groupId && (
-							<>
-								<div className="avatar">
-									<div className="w-10 rounded-full">
-										<img
-											src={groupPicUrl}
-											alt={`${groupId}`}
-										/>
-									</div>
+			{/* Overlay to blur background when drawer is open */}
+			{isDrawerOpen && (
+				<div
+					className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-md z-40"
+					onClick={() => setIsDrawerOpen(false)} // Clicking outside will close the drawer
+				></div>
+			)}
+
+			{/* Right-side Drawer */}
+			<div
+				className={`fixed top-5 right-0 w-80 h-full bg-neutral-950 text-white z-50 select-text transition-transform transform ${
+					isDrawerOpen ? "translate-x-0" : "translate-x-full"
+				}`}
+			>
+				<div className="p-4">
+					<h2 className="text-2xl font-bold text-blue-600 mb-4">
+						Group Members
+					</h2>
+
+					{/* Admin Section */}
+					<div
+						tabIndex={0}
+						className="collapse collapse-open bg-neutral-900 text-white rounded-lg mb-4"
+					>
+						<input
+							type="checkbox"
+							className="peer"
+							id="admin-collapse"
+						/>
+						<label
+							htmlFor="admin-collapse"
+							className="collapse-title text-xl font-semibold"
+						>
+							Admins
+						</label>
+						<div className="collapse-content">
+							{adminUsername && (
+								<div className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer">
+									<img
+										src={
+											members.find(
+												(m) =>
+													m.memberName ===
+													adminUsername,
+											)?.memberProfilePicUrl ||
+											"https://ui.avatar.com/default"
+										}
+										alt={adminUsername}
+										className="w-10 h-10 rounded-full"
+									/>
+									<span className="text-lg font-medium">
+										{adminUsername} 👑{" "}
+										{adminUsername === currentUsername &&
+											"--(YOU)"}
+									</span>
 								</div>
-								<span className="text-lg font-semibold">
-									{groupName}
-								</span>
-							</>
-						)}
+							)}
+						</div>
 					</div>
 
-					{members.length > 0 && (
-						<span className="text-sm text-gray-600">
-							Members:{" "}
-							{members.map((m) => m.memberName).join(", ")}
-						</span>
+					{/* Members Section */}
+					<div
+						tabIndex={0}
+						className="collapse collapse-open bg-neutral-900 text-white rounded-lg"
+					>
+						<input
+							type="checkbox"
+							className="peer"
+							id="members-collapse"
+						/>
+						<label
+							htmlFor="members-collapse"
+							className="collapse-title text-xl font-semibold"
+						>
+							Members
+						</label>
+						<div className="collapse-content">
+							{members
+								.filter(
+									(member) =>
+										member.memberName !== adminUsername,
+								) // Exclude admin
+								.map((member, index) => (
+									<div
+										key={index}
+										className="flex items-center space-x-4 p-2 my-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
+									>
+										<img
+											src={
+												member.memberProfilePicUrl ||
+												"https://ui.avatar.com/default"
+											}
+											alt={member.memberName}
+											className="w-10 h-10 rounded-full"
+										/>
+										<span className="text-lg">
+											{member.memberName}{" "}
+											{member.memberName ===
+												currentUsername && "--(YOU)"}
+										</span>
+									</div>
+								))}
+						</div>
+					</div>
+
+					{/* Close Button */}
+					<button
+						className="btn bg-white text-neutral-900 mt-6 rounded-lg w-full hover:bg-neutral-800 hover:text-white"
+						onClick={() => setIsDrawerOpen(false)}
+					>
+						Close
+					</button>
+				</div>
+			</div>
+
+			{/* Navbar */}
+			<div className="flex items-center justify-between p-4 bg-neutral-900 text-white shadow-md rounded-lg">
+				{/* Group Information */}
+				<div className="flex items-center space-x-4">
+					{groupId && (
+						<>
+							{/* Group Avatar with Photo Viewer */}
+							<PhotoProvider>
+								<PhotoView
+									src={
+										groupPicUrl ||
+										"https://ui.avatar.com/default"
+									}
+								>
+									<div className="avatar cursor-pointer">
+										<div className="w-10 rounded-full ring ring-blue-600 ring-offset-base-100 ring-offset-2">
+											<img
+												src={
+													groupPicUrl ||
+													"https://ui.avatar.com/default"
+												}
+												alt={groupName}
+												className="object-cover"
+											/>
+										</div>
+									</div>
+								</PhotoView>
+							</PhotoProvider>
+
+							{/* Group Name */}
+							<div className="flex flex-col">
+								<span className="text-lg font-semibold text-blue-500">
+									{groupName}
+								</span>
+
+								{/* Members Display */}
+								{members.length > 0 && (
+									<span className="text-sm text-gray-400">
+										Members:{" "}
+										{members
+											.map((m) => m.memberName)
+											.join(", ")}
+									</span>
+								)}
+							</div>
+						</>
 					)}
 				</div>
-				<button
-					onClick={onClose}
-					className="btn btn-ghost btn-sm text-white"
-					title="Close Chat"
-				>
-					<FaArrowRight size={24} />
-				</button>
+
+				{/* Navbar Buttons */}
+				<div className="flex items-center space-x-3">
+					{/* Open Members Button */}
+					<button
+						onClick={() => setIsDrawerOpen(true)} // This opens the drawer
+						className="btn btn-ghost text-white"
+						title="Open Members"
+					>
+						<FaUsers size={24} />
+					</button>
+
+					{/* Close Chat Button */}
+					<button
+						onClick={onClose}
+						className="btn btn-ghost text-white"
+						title="Close Chat"
+					>
+						<FaArrowRight size={24} />
+					</button>
+				</div>
 			</div>
 
 			{/* Chat Messages */}

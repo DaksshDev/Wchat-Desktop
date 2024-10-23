@@ -14,7 +14,7 @@ module.exports = {
 		require('tailwind-scrollbar')({ nocompatible: true })
 	  ],
 	  daisyui: {
-		themes: ["light", "dark", "cupcake"],
+		themes: ["dark"],
 		"fontFamily": "Helvetica", // Set Helvetica in Daisy UI theme
 	  },
 };

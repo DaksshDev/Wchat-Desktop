@@ -8,7 +8,7 @@ exports.showNotification = (title, body, subtitle) => {
     <toast activationType="protocol">
       <visual>
         <binding template="ToastGeneric">
-          <image id="1" src="${join(__dirname, "..", "icon.ico")}" placement="appLogoOverride" hint-crop="circle"/>
+          <image id="1" src="${join(__dirname, "..", "..", "icon.ico")}" placement="appLogoOverride" hint-crop="circle"/>
           <text id="1">${title}</text>
 		  <text id="2">${body}</text>
           <text id="3" placement="attribution">${subtitle}</text>
@@ -32,6 +32,7 @@ exports.showNotification = (title, body, subtitle) => {
       toastXml: toastXmlString,
       silent: true,
       timeoutType: "default",
+      icon:join(__dirname, "..", "..", "icon.ico"),
     });
 
     // Open the external link when the notification is clicked

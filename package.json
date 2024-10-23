@@ -103,5 +103,21 @@
 			"last 1 firefox version",
 			"last 1 safari version"
 		]
-	}
+	},
+	"build": {
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "uninstallDisplayName": "Uninstall Wchat",
+      "uninstallerIcon": "icon.ico",
+      "installerIcon": "icon.ico"
+    },
+    "icon": "icon.ico",
+    "win": {
+      "target": "nsis"
+    }
+  }
 }

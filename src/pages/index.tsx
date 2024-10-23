@@ -265,7 +265,7 @@ export const IndexPage: FC = () => {
 						<div className="form-control mt-6">
 							<button
 								className={`btn btn-primary w-full ${
-									loading ? "loading" : ""
+									loading ? "loading loading-sm loading-spinner" : ""
 								}`}
 								disabled={loading}
 							>

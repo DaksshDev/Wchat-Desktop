@@ -54,19 +54,35 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	currentUserPic,
 }) => {
 	const [message, setMessage] = useState("");
+	const [selectedMember, setSelectedMember] = useState("");
 	const [messages, setMessages] = useState<any[]>([]);
 	const [expandedMessages, setExpandedMessages] = useState<number[]>([]);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [showGifPicker, setShowGifPicker] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
-	const [adminUsername, setAdminUsername] = useState<string | null>(null);
+	const [adminUsername, setAdminUsername] = useState<string[]>([]);
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const [showRoleMenu, setShowRoleMenu] = useState(false);
+
+	const handleBan = () => {
+		console.log(`Banning`);
+		// Implement ban logic here
+	};
+
+	const handleKick = () => {
+		console.log(`Kicking`);
+		// Implement kick logic here
+	};
 
 	const isVideoUrl = (url: string) => {
 		return ReactPlayer.canPlay(url); // Use ReactPlayer's built-in method to check if the URL is playable
 	};
 
 	const [showContextMenu, setShowContextMenu] = useState<{
+		x: number;
+		y: number;
+	} | null>(null);
+	const [showMemberContextMenu, setShowMemberContextMenu] = useState<{
 		x: number;
 		y: number;
 	} | null>(null);
@@ -90,39 +106,43 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	const [isTyping, setIsTyping] = useState(false); // Whether the current user is typing
 	const [typingDots, setTypingDots] = useState("."); // Animated typing dots
 	const [typingMembers, setTypingMembers] = useState<string[]>([]);
-	// Function to get the admin username from the RTDB
-	const getAdmin = async (groupId: string): Promise<string | null> => {
+
+	// Function to get the admin usernames from the RTDB
+	const getAdmins = async (groupId: string): Promise<string[]> => {
 		try {
 			const membersRef = ref(rtdb, `groups/${groupId}/members`);
 			const snapshot = await get(membersRef);
 
 			if (snapshot.exists()) {
 				const members = snapshot.val();
+				const adminUsernames: string[] = []; // Array to hold admin usernames
 
-				// Find the admin member
+				// Find all admin members
 				for (const username in members) {
 					if (members[username].role === "ADMIN") {
-						return username; // Return admin username if found
+						adminUsernames.push(username); // Add admin username to the array
 					}
 				}
+
+				return adminUsernames; // Return array of admin usernames
 			}
 
-			return null; // No admin found
+			return []; // Return an empty array if no admins found
 		} catch (error) {
-			console.error("Error fetching admin:", error);
-			return null;
+			console.error("Error fetching admins:", error);
+			return []; // Return an empty array in case of error
 		}
 	};
 
 	useEffect(() => {
-		const fetchAdmin = async () => {
+		const fetchAdmins = async () => {
 			if (groupId) {
-				const admin = await getAdmin(groupId);
-				setAdminUsername(admin); // Store the admin username in state
+				const admins = await getAdmins(groupId); // Assuming getAdmins fetches multiple admins
+				setAdminUsername(admins); // Store the list of admin usernames in state
 			}
 		};
 
-		fetchAdmin();
+		fetchAdmins();
 	}, [groupId]); // Runs whenever the groupId changes
 
 	// Ref to store the timeout ID
@@ -136,6 +156,22 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			);
 			await set(typingRef, isTyping);
 		}
+	};
+
+	// Function to change the role of a selected member
+	const changeRole = (memberName: string, newRole: string) => {
+		const memberRoleRef = ref(
+			rtdb,
+			`groups/${groupId}/members/${memberName}/role`,
+		);
+
+		set(memberRoleRef, newRole)
+			.then(() => {
+				console.log(`Role of ${memberName} changed to ${newRole}`);
+			})
+			.catch((error) => {
+				console.error("Error changing role: ", error);
+			});
 	};
 
 	// Handle input change and typing status
@@ -464,6 +500,13 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		setSelectedMessage(msg);
 	};
 
+	// Handle right-click to show context menu
+	const handleRightClickMember = (e: React.MouseEvent, member: any) => {
+		e.preventDefault();
+		setShowMemberContextMenu({ x: e.pageX, y: e.pageY });
+		setSelectedMember(member);
+	};
+
 	const handleDeleteMessage = async (deleteForEveryone: boolean) => {
 		if (!selectedMessage || !groupId || !members) return; // Ensure a message is selected, and group info is available
 
@@ -571,25 +614,35 @@ const GroupChat: React.FC<GroupChatProps> = ({
 							Admins
 						</label>
 						<div className="collapse-content">
-							{adminUsername && (
-								<div className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer">
-									<img
-										src={
-											members.find(
-												(m) =>
-													m.memberName ===
-													adminUsername,
-											)?.memberProfilePicUrl ||
-											"https://ui.avatar.com/default"
-										}
-										alt={adminUsername}
-										className="w-10 h-10 rounded-full"
-									/>
-									<span className="text-lg font-medium">
-										{adminUsername} 👑{" "}
-										{adminUsername === currentUsername &&
-											"--(YOU)"}
-									</span>
+							{adminUsername && adminUsername.length > 0 && (
+								<div className="flex flex-col space-y-2 p-2">
+									{adminUsername.map((adminUsername) => {
+										const member = members.find(
+											(m) =>
+												m.memberName === adminUsername,
+										);
+										return (
+											<div
+												key={adminUsername}
+												className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
+											>
+												<img
+													src={
+														member?.memberProfilePicUrl ||
+														"https://ui.avatar.com/default"
+													}
+													alt={`${adminUsername}'s Profile`}
+													className="w-10 h-10 rounded-full"
+												/>
+												<span className="text-lg font-medium">
+													{adminUsername} 👑{" "}
+													{adminUsername ===
+														currentUsername &&
+														"--(YOU)"}
+												</span>
+											</div>
+										);
+									})}
 								</div>
 							)}
 						</div>
@@ -615,12 +668,20 @@ const GroupChat: React.FC<GroupChatProps> = ({
 							{members
 								.filter(
 									(member) =>
-										member.memberName !== adminUsername,
-								) // Exclude admin
+										!adminUsername.includes(
+											member.memberName,
+										), // Exclude all admins
+								)
 								.map((member, index) => (
 									<div
 										key={index}
 										className="flex items-center space-x-4 p-2 my-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
+										onContextMenu={(e) => {
+											handleRightClickMember(
+												e,
+												member.memberName,
+											);
+										}}
 									>
 										<img
 											src={
@@ -649,6 +710,83 @@ const GroupChat: React.FC<GroupChatProps> = ({
 					</button>
 				</div>
 			</div>
+
+			{/* Show context menu only if current user is an admin */}
+			{showMemberContextMenu &&
+				adminUsername.includes(currentUsername) && (
+					<div
+						className="absolute z-50 bg-gray-800 text-white p-2 rounded-lg shadow-lg"
+						style={{
+							top: `${showMemberContextMenu.y}px`,
+							left: `${showMemberContextMenu.x}px`,
+						}}
+						onMouseLeave={() => setShowMemberContextMenu(null)}
+					>
+						<ul>
+							{/* Ban Option */}
+							<li
+								className="p-2 hover:bg-red-600 cursor-pointer"
+								onClick={handleBan}
+							>
+								Ban
+							</li>
+
+							{/* Kick Option */}
+							<li
+								className="p-2 hover:bg-orange-600 cursor-pointer"
+								onClick={handleKick}
+							>
+								Kick
+							</li>
+
+							{/* Set Role Option */}
+							<li
+								className="p-2 hover:bg-blue-600 cursor-pointer relative"
+								onMouseEnter={() => setShowRoleMenu(true)}
+								onMouseLeave={() => setShowRoleMenu(false)}
+							>
+								Set Role
+								{showRoleMenu && (
+									<ul className="absolute left-full top-0 ml-2 bg-gray-700 text-white p-2 rounded-lg shadow-lg">
+										<li
+											className="p-2 hover:bg-green-600 cursor-pointer"
+											onClick={() =>
+												changeRole(
+													selectedMember,
+													"ADMIN",
+												)
+											}
+										>
+											Admin
+										</li>
+										<li
+											className="p-2 hover:bg-yellow-600 cursor-pointer"
+											onClick={() =>
+												changeRole(
+													selectedMember,
+													"Mod",
+												)
+											}
+										>
+											Mod
+										</li>
+										<li
+											className="p-2 hover:bg-gray-600 cursor-pointer"
+											onClick={() =>
+												changeRole(
+													selectedMember,
+													"Member",
+												)
+											}
+										>
+											Member
+										</li>
+									</ul>
+								)}
+							</li>
+						</ul>
+					</div>
+				)}
 
 			{/* Navbar */}
 			<div className="flex items-center justify-between p-4 bg-neutral-900 text-white shadow-md rounded-lg">
@@ -747,11 +885,10 @@ const GroupChat: React.FC<GroupChatProps> = ({
 							? currentUserPic
 							: senderInfo?.memberProfilePicUrl;
 
-						// If the sender is the admin, append ' - ADMIN' with a crown emoji
-						const displayName =
-							msg.sender === adminUsername
-								? `${msg.sender} 👑 - ADMIN`
-								: msg.sender;
+						// If the sender is an admin, append ' - ADMIN' with a crown emoji
+						const displayName = adminUsername.includes(msg.sender)
+							? `${msg.sender} 👑 - ADMIN`
+							: msg.sender;
 
 						const isExpanded = expandedMessages.includes(idx);
 						const contentToShow = isExpanded

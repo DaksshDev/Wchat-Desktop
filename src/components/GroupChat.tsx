@@ -173,7 +173,6 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		const intervalId = setInterval(fetchMods, 2000); // Fetch every 2 seconds
 
 		return () => clearInterval(intervalId); // Cleanup on unmount or when groupId changes
-
 	}, [groupId]); // Runs whenever the groupId changes
 
 	useEffect(() => {
@@ -189,7 +188,6 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		const intervalId = setInterval(fetchAdmins, 2000); // Fetch every 2 seconds
 
 		return () => clearInterval(intervalId); // Cleanup on unmount or when groupId changes
-		
 	}, [groupId]); // Runs whenever the groupId changes
 
 	// Ref to store the timeout ID
@@ -676,6 +674,12 @@ const GroupChat: React.FC<GroupChatProps> = ({
 											<div
 												key={adminUsername}
 												className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
+												onContextMenu={(e) => {
+													handleRightClickMember(
+														e,
+														adminUsername,
+													);
+												}}
 											>
 												<img
 													src={
@@ -700,54 +704,64 @@ const GroupChat: React.FC<GroupChatProps> = ({
 					</div>
 
 					{/* Mods Section */}
-					<div
-						tabIndex={0}
-						className="collapse collapse-open bg-neutral-900 text-white rounded-lg mb-4"
-					>
-						<input
-							type="checkbox"
-							className="peer"
-							id="mods-collapse"
-						/>
-						<label
-							htmlFor="mods-collapse"
-							className="collapse-title text-xl font-semibold"
+					{modUsernames && (
+						<div
+							tabIndex={0}
+							className="collapse collapse-open bg-neutral-900 text-white rounded-lg mb-4"
 						>
-							Moderators
-						</label>
-						<div className="collapse-content">
-							{modUsernames.length > 0 && (
-								<div className="flex flex-col space-y-2 p-2">
-									{modUsernames.map((modUsername) => {
-										const member = members.find(
-											(m) => m.memberName === modUsername,
-										);
-										return (
-											<div
-												key={modUsername}
-												className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
-											>
-												<img
-													src={
-														member?.memberProfilePicUrl ||
-														"https://ui.avatar.com/default"
-													}
-													alt={`${modUsername}'s Profile`}
-													className="w-10 h-10 rounded-full"
-												/>
-												<span className="text-lg font-medium">
-													{modUsername} 🛠️{" "}
-													{modUsername ===
-														currentUsername &&
-														"--(YOU)"}
-												</span>
-											</div>
-										);
-									})}
-								</div>
-							)}
+							<input
+								type="checkbox"
+								className="peer"
+								id="mods-collapse"
+							/>
+							<label
+								htmlFor="mods-collapse"
+								className="collapse-title text-xl font-semibold"
+							>
+								Moderators
+							</label>
+							<div className="collapse-content">
+								{modUsernames.length > 0 && (
+									<div className="flex flex-col space-y-2 p-2">
+										{modUsernames.map((modUsername) => {
+											const member = members.find(
+												(m) =>
+													m.memberName ===
+													modUsername,
+											);
+											return (
+												<div
+													key={modUsername}
+													className="flex items-center space-x-4 p-2 rounded-lg hover:bg-neutral-800 cursor-pointer"
+													onContextMenu={(e) => {
+														handleRightClickMember(
+															e,
+															modUsername,
+														);
+													}}
+												>
+													<img
+														src={
+															member?.memberProfilePicUrl ||
+															"https://ui.avatar.com/default"
+														}
+														alt={`${modUsername}'s Profile`}
+														className="w-10 h-10 rounded-full"
+													/>
+													<span className="text-lg font-medium">
+														{modUsername} 🛠️{" "}
+														{modUsername ===
+															currentUsername &&
+															"--(YOU)"}
+													</span>
+												</div>
+											);
+										})}
+									</div>
+								)}
+							</div>
 						</div>
-					</div>
+					)}
 
 					{/* Members Section */}
 					<div
@@ -767,10 +781,15 @@ const GroupChat: React.FC<GroupChatProps> = ({
 						</label>
 						<div className="collapse-content">
 							{members
-								.filter((member) =>
-									!adminUsername.includes(member.memberName) && // Exclude all admins
-									!modUsernames.includes(member.memberName) // Exclude all mods
-								)								
+								.filter(
+									(member) =>
+										!adminUsername.includes(
+											member.memberName,
+										) && // Exclude all admins
+										!modUsernames.includes(
+											member.memberName,
+										), // Exclude all mods
+								)
 								.map((member, index) => (
 									<div
 										key={index}
@@ -823,33 +842,92 @@ const GroupChat: React.FC<GroupChatProps> = ({
 					}}
 					onMouseLeave={() => setShowMemberContextMenu(null)}
 				>
-
 					<ul>
 						{/* Admin Options */}
 						{adminUsername.includes(currentUsername) && (
 							<>
 								<li
-									className="p-2 hover:bg-red-600 cursor-pointer rounded-lg"
+									className="flex items-center p-2 rounded-lg"
+									onMouseEnter={() => setShowRoleMenu(false)} // Close role menu on Name hover
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M480.04-494.39q-72.19 0-121.51-49.44-49.31-49.43-49.31-121.46 0-72.04 49.27-121.23 49.28-49.2 121.47-49.2t121.51 49.17q49.31 49.17 49.31 121.38 0 71.91-49.27 121.34-49.28 49.44-121.47 49.44ZM158.17-233.07v-25.65q0-31.38 15.67-57.39t42.92-42.91q59-35 126.26-53.5 67.27-18.5 136.63-18.5 69.83 0 137.33 18.5 67.5 18.5 126.26 53.26 27.25 15.87 42.92 42.31 15.67 26.45 15.67 58.23v25.65q0 44.91-30.32 75.04-30.31 30.14-74.9 30.14H263.06q-44.58 0-74.73-30.14-30.16-30.13-30.16-75.04Zm105.18 0h433.3v-24.45q0-4.95-1.35-7.37-1.36-2.42-3.84-2.87-45.33-27.28-100.51-42.69-55.19-15.4-111.07-15.4-55.4 0-110.95 15.02-55.54 15.03-100.39 43.07-2.53 1.1-3.86 3.51-1.33 2.41-1.33 6.73v24.45Zm216.85-366.5q27.6 0 46.51-19.1 18.9-19.11 18.9-46.71t-19.11-46.5q-19.1-18.9-46.7-18.9t-46.51 19.16q-18.9 19.15-18.9 46.66 0 27.6 19.11 46.5 19.1 18.89 46.7 18.89Zm-.2-65.6Zm0 432.1Z" />
+									</svg>
+									⠀<strong>{selectedMember}</strong>
+								</li>
+								<li
+									className="flex items-center p-2 hover:bg-red-600 cursor-pointer rounded-lg"
 									onClick={handleBan}
+									onMouseEnter={() => setShowRoleMenu(false)} // Close role menu on ban hover
 								>
-									Ban
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M480-60.65q-86.36 0-162.8-32.76-76.43-32.76-133.73-90.18-57.3-57.42-90.06-133.97-32.76-76.56-32.76-162.92 0-87.12 32.76-163.05 32.76-75.94 90.06-133.24 57.3-57.3 133.85-89.94 76.56-32.64 162.68-32.64 87.12 0 163.18 32.64 76.05 32.64 133.35 89.94t90.06 133.24q32.76 75.93 32.76 163.05 0 86.36-32.76 162.92-32.76 76.55-90.06 133.97-57.3 57.42-133.23 90.18Q567.36-60.65 480-60.65Zm0-105.18q50.57 0 96.75-15.54t84.99-43.59L224.48-661.98q-27.57 39.05-43.11 85.11-15.54 46.07-15.54 96.39 0 130.57 91.92 222.61 91.92 92.04 222.25 92.04Zm255.76-133.15q27.33-39.04 42.87-85.11 15.54-46.06 15.54-96.39 0-130.09-91.92-221.89-91.92-91.8-222.25-91.8-50.33 0-96.27 15.3-45.95 15.3-84.99 42.63l437.02 437.26Z" />
+									</svg>
+									⠀Ban
 								</li>
 								<li
-									className="p-2 hover:bg-orange-600 cursor-pointer rounded-lg"
+									className="flex items-center p-2 hover:bg-orange-600 cursor-pointer rounded-lg"
 									onClick={handleKick}
+									onMouseEnter={() => setShowRoleMenu(false)} // Close role menu on kick hover
 								>
-									Kick
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M480.76-405.98 324.87-249.33q-16.96 16.96-37.39 16.08-20.44-.88-37.15-17.84-16.2-16.95-15.82-37.01.38-20.05 16.58-37.01L405.22-480 249.33-637.65q-16.2-16.96-15.7-37.01.5-20.06 16.7-37.01 16.71-16.96 37.65-17.34 20.93-.38 37.89 16.58l154.89 156.65 154.37-156.65q16.96-16.96 37.89-16.58 20.94.38 37.65 17.34 16.2 16.95 15.82 37.01-.38 20.05-16.58 37.01L554.78-480l155.13 155.89q16.2 16.2 16.58 36.13.38 19.94-15.82 36.89-16.71 16.96-37.65 17.34-20.93.38-37.89-16.58L480.76-405.98Z" />
+									</svg>
+									⠀Kick
 								</li>
 								<li
-									className="p-2 hover:bg-blue-600 cursor-pointer relative rounded-lg" 
+									className="flex items-center p-2 hover:bg-blue-600 cursor-pointer relative rounded-lg"
 									onMouseEnter={() => setShowRoleMenu(true)}
-									onMouseLeave={() => setShowRoleMenu(false)}
 								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="m480-208.98-129.02 51.37q-51.35 21.2-98.08-10.2-46.73-31.39-46.73-87.49v-494.4q0-43.62 30.94-74.4 30.94-30.77 74.24-30.77h337.3q43.3 0 74.24 30.77 30.94 30.78 30.94 74.4v494.4q0 56.1-46.73 87.49-46.73 31.4-98.08 10.2L480-208.98Zm0-113.31 168.65 66.99v-494.4h-337.3v494.4L480-322.29Zm0-427.41H311.35h337.3H480Z" />
+									</svg>
 									Set Role
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M500.74-480.76 346.61-635.13q-16.2-15.96-16.2-36.89 0-20.94 16.2-37.13 15.96-15.96 36.89-15.96t37.23 16.3l191.18 191.18q7.48 7.88 11.46 17.01 3.98 9.14 3.98 20.06 0 10.68-3.98 19.81-3.98 9.14-11.46 16.62L420.73-252.95q-16.3 16.3-36.73 15.8-20.43-.5-36.39-16.46-16.2-16.19-16.2-37.13 0-20.93 16.2-36.89l153.13-153.13Z" />
+									</svg>
 									{showRoleMenu && (
-										<ul className="absolute left-full top-0 ml-2 bg-gray-700 text-white p-2 rounded-lg shadow-lg">
+										<ul
+											className="absolute left-full top-0 ml-2 bg-gray-900 text-white p-2 rounded-lg shadow-lg w-36"
+											onMouseEnter={() =>
+												setShowRoleMenu(true)
+											} // Keep submenu open
+											onMouseLeave={() =>
+												setShowRoleMenu(false)
+											} // Close on mouse leave
+										>
 											<li
-												className="p-2 hover:bg-blue-600 cursor-pointer rounded-lg"
+												className="flex items-center p-2 hover:bg-blue-600 cursor-pointer rounded-lg w-full"
 												onClick={() =>
 													changeRole(
 														selectedMember,
@@ -857,10 +935,21 @@ const GroupChat: React.FC<GroupChatProps> = ({
 													)
 												}
 											>
-												Admin
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													height="20px"
+													viewBox="0 -960 960 960"
+													width="20px"
+													fill="#e8eaed"
+												>
+													<path d="M480.08-385.43q-69.36 0-117.88-48.33-48.53-48.32-48.53-117.68 0-69.36 48.45-117.89 48.44-48.52 117.8-48.52t117.88 48.44q48.53 48.44 48.53 117.81 0 69.36-48.45 117.76-48.44 48.41-117.8 48.41ZM480-483.2q27.28 0 47.8-20.52 20.53-20.52 20.53-47.8 0-27.28-20.53-47.93-20.52-20.64-47.8-20.64-27.28 0-47.8 20.64-20.53 20.65-20.53 47.93t20.53 47.8q20.52 20.52 47.8 20.52Zm0 5.44Zm0-310.94-240.65 92.27V-515q0 50.1 13.12 97.33 13.12 47.24 36.88 87.76 45.28-21.29 93.82-31.05 48.55-9.76 96.83-9.76 48.04 0 96.71 9.76 48.66 9.76 93.94 31.05 24-40.52 37-87.76 13-47.23 13-97.33v-181.43L480-788.7Zm.2 515.74q-33.96 0-66.27 5.14-32.3 5.15-63.34 18.43 27.18 28.02 59.53 49.17 32.35 21.15 69.64 33.39 37.28-12.24 69.81-33.39 32.52-21.15 59.84-49.17-31.04-13.28-63.14-18.43-32.11-5.14-66.07-5.14ZM480-64.13q-7.48 0-16.2-.87-8.71-.87-16.43-3.61-142-44.24-227.6-172.19-85.6-127.96-85.6-274.2v-181.37q0-33.84 18.56-60.39 18.56-26.55 49.23-38.31l240.65-92.56q17.96-7.48 37.39-7.48t37.39 7.48l240.65 92.56q30.67 11.76 49.23 38.31 18.56 26.55 18.56 60.39V-515q0 146.24-85.6 274.2-85.6 127.95-227.6 172.19-7.72 2.74-16.43 3.61-8.72.87-16.2.87Z" />
+												</svg>
+												<span className="flex-grow">
+													Admin
+												</span>
 											</li>
 											<li
-												className="p-2 hover:bg-yellow-600 cursor-pointer rounded-lg"
+												className="flex items-center p-2 hover:bg-yellow-600 cursor-pointer rounded-lg"
 												onClick={() =>
 													changeRole(
 														selectedMember,
@@ -868,10 +957,21 @@ const GroupChat: React.FC<GroupChatProps> = ({
 													)
 												}
 											>
-												Mod
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													height="20px"
+													viewBox="0 -960 960 960"
+													width="20px"
+													fill="#e8eaed"
+												>
+													<path d="m480-402 91.85 68.33q7.24 5.24 15.33.06 8.1-5.18 5.1-14.02L556.24-460l92.61-72.57q8.48-5.68 5.5-14.55-2.97-8.88-13.77-8.88H529.06l-36.34-110.37q-2.58-8.48-12.39-8.48t-13.05 8.48L430.78-556H319.59q-10.46 0-13.07 9.1-2.61 9.1 5.87 14.33L403.76-460l-35.8 111.37q-3 8.84 4.97 14.4 7.98 5.56 15.22.32L480-402Zm0 337.87q-7.45 0-16.18-.87-8.72-.87-16.45-3.61-142-44.24-227.6-172.19-85.6-127.96-85.6-274.2v-181.37q0-33.44 18.56-60.19t49.23-38.51l240.65-92.56q17.96-7.48 37.39-7.48t37.39 7.48l240.65 92.56q30.67 11.76 49.23 38.51 18.56 26.75 18.56 60.19V-515q0 146.24-85.6 274.2-85.6 127.95-227.6 172.19-7.73 2.74-16.45 3.61-8.73.87-16.18.87Zm0-102.7q104.09-35.44 172.37-131.98 68.28-96.53 68.28-215.86v-181.67L480-788.7l-240.65 92.38v181.26q0 119.72 68.28 216.25Q375.91-202.27 480-166.83Zm0-310.93Z" />
+												</svg>
+												<span className="flex-grow">
+													Mod
+												</span>
 											</li>
 											<li
-												className="p-2 hover:bg-neutral-800 cursor-pointer rounded-lg"
+												className="flex items-center p-2 hover:bg-neutral-800 cursor-pointer rounded-lg"
 												onClick={() =>
 													changeRole(
 														selectedMember,
@@ -879,7 +979,18 @@ const GroupChat: React.FC<GroupChatProps> = ({
 													)
 												}
 											>
-												Member
+												<svg
+													xmlns="http://www.w3.org/2000/svg"
+													height="20px"
+													viewBox="0 -960 960 960"
+													width="20px"
+													fill="#e8eaed"
+												>
+													<path d="M480.04-494.39q-72.19 0-121.51-49.44-49.31-49.43-49.31-121.46 0-72.04 49.27-121.23 49.28-49.2 121.47-49.2t121.51 49.17q49.31 49.17 49.31 121.38 0 71.91-49.27 121.34-49.28 49.44-121.47 49.44ZM158.17-233.07v-25.65q0-31.38 15.67-57.39t42.92-42.91q59-35 126.26-53.5 67.27-18.5 136.63-18.5 69.83 0 137.33 18.5 67.5 18.5 126.26 53.26 27.25 15.87 42.92 42.31 15.67 26.45 15.67 58.23v25.65q0 44.91-30.32 75.04-30.31 30.14-74.9 30.14H263.06q-44.58 0-74.73-30.14-30.16-30.13-30.16-75.04Zm105.18 0h433.3v-24.45q0-4.95-1.35-7.37-1.36-2.42-3.84-2.87-45.33-27.28-100.51-42.69-55.19-15.4-111.07-15.4-55.4 0-110.95 15.02-55.54 15.03-100.39 43.07-2.53 1.1-3.86 3.51-1.33 2.41-1.33 6.73v24.45Zm216.85-366.5q27.6 0 46.51-19.1 18.9-19.11 18.9-46.71t-19.11-46.5q-19.1-18.9-46.7-18.9t-46.51 19.16q-18.9 19.15-18.9 46.66 0 27.6 19.11 46.5 19.1 18.89 46.7 18.89Zm-.2-65.6Zm0 432.1Z" />
+												</svg>
+												<span className="flex-grow">
+													Member
+												</span>
 											</li>
 										</ul>
 									)}
@@ -890,17 +1001,47 @@ const GroupChat: React.FC<GroupChatProps> = ({
 						{/* Mod Options */}
 						{modUsernames.includes(currentUsername) && (
 							<>
-								<li
-									className="p-2 hover:bg-red-600 cursor-pointer"
-									onClick={handleBan}
-								>
-									Ban
+								<li className="flex items-center p-2 rounded-lg">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M480.04-494.39q-72.19 0-121.51-49.44-49.31-49.43-49.31-121.46 0-72.04 49.27-121.23 49.28-49.2 121.47-49.2t121.51 49.17q49.31 49.17 49.31 121.38 0 71.91-49.27 121.34-49.28 49.44-121.47 49.44ZM158.17-233.07v-25.65q0-31.38 15.67-57.39t42.92-42.91q59-35 126.26-53.5 67.27-18.5 136.63-18.5 69.83 0 137.33 18.5 67.5 18.5 126.26 53.26 27.25 15.87 42.92 42.31 15.67 26.45 15.67 58.23v25.65q0 44.91-30.32 75.04-30.31 30.14-74.9 30.14H263.06q-44.58 0-74.73-30.14-30.16-30.13-30.16-75.04Zm105.18 0h433.3v-24.45q0-4.95-1.35-7.37-1.36-2.42-3.84-2.87-45.33-27.28-100.51-42.69-55.19-15.4-111.07-15.4-55.4 0-110.95 15.02-55.54 15.03-100.39 43.07-2.53 1.1-3.86 3.51-1.33 2.41-1.33 6.73v24.45Zm216.85-366.5q27.6 0 46.51-19.1 18.9-19.11 18.9-46.71t-19.11-46.5q-19.1-18.9-46.7-18.9t-46.51 19.16q-18.9 19.15-18.9 46.66 0 27.6 19.11 46.5 19.1 18.89 46.7 18.89Zm-.2-65.6Zm0 432.1Z" />
+									</svg>
+									<strong>{selectedMember}</strong>
 								</li>
 								<li
-									className="p-2 hover:bg-orange-600 cursor-pointer"
+									className="flex items-center p-2 hover:bg-red-600 cursor-pointer rounded-lg"
+									onClick={handleBan}
+								>
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M480-60.65q-86.36 0-162.8-32.76-76.43-32.76-133.73-90.18-57.3-57.42-90.06-133.97-32.76-76.56-32.76-162.92 0-87.12 32.76-163.05 32.76-75.94 90.06-133.24 57.3-57.3 133.85-89.94 76.56-32.64 162.68-32.64 87.12 0 163.18 32.64 76.05 32.64 133.35 89.94t90.06 133.24q32.76 75.93 32.76 163.05 0 86.36-32.76 162.92-32.76 76.55-90.06 133.97-57.3 57.42-133.23 90.18Q567.36-60.65 480-60.65Zm0-105.18q50.57 0 96.75-15.54t84.99-43.59L224.48-661.98q-27.57 39.05-43.11 85.11-15.54 46.07-15.54 96.39 0 130.57 91.92 222.61 91.92 92.04 222.25 92.04Zm255.76-133.15q27.33-39.04 42.87-85.11 15.54-46.06 15.54-96.39 0-130.09-91.92-221.89-91.92-91.8-222.25-91.8-50.33 0-96.27 15.3-45.95 15.3-84.99 42.63l437.02 437.26Z" />
+									</svg>
+									⠀Ban
+								</li>
+								<li
+									className="flex items-center p-2 hover:bg-orange-600 cursor-pointer rounded-lg"
 									onClick={handleKick}
 								>
-									Kick
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										height="20px"
+										viewBox="0 -960 960 960"
+										width="20px"
+										fill="#e8eaed"
+									>
+										<path d="M480.76-405.98 324.87-249.33q-16.96 16.96-37.39 16.08-20.44-.88-37.15-17.84-16.2-16.95-15.82-37.01.38-20.05 16.58-37.01L405.22-480 249.33-637.65q-16.2-16.96-15.7-37.01.5-20.06 16.7-37.01 16.71-16.96 37.65-17.34 20.93-.38 37.89 16.58l154.89 156.65 154.37-156.65q16.96-16.96 37.89-16.58 20.94.38 37.65 17.34 16.2 16.95 15.82 37.01-.38 20.05-16.58 37.01L554.78-480l155.13 155.89q16.2 16.2 16.58 36.13.38 19.94-15.82 36.89-16.71 16.96-37.65 17.34-20.93.38-37.89-16.58L480.76-405.98Z" />
+									</svg>
+									⠀Kick
 								</li>
 							</>
 						)}
@@ -1005,9 +1146,10 @@ const GroupChat: React.FC<GroupChatProps> = ({
 							? currentUserPic
 							: senderInfo?.memberProfilePicUrl;
 
-						// If the sender is an admin, append ' - ADMIN' with a crown emoji
 						const displayName = adminUsername.includes(msg.sender)
 							? `${msg.sender} 👑 - ADMIN`
+							: modUsernames.includes(msg.sender)
+							? `${msg.sender} 🛠️ - MOD`
 							: msg.sender;
 
 						const isExpanded = expandedMessages.includes(idx);

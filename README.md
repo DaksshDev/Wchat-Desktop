@@ -89,8 +89,7 @@ npm run dev
 <h2>📧 Contact</h2>
 <p>For any questions or suggestions, feel free to reach out to:</p>
 <ul>
-    <li><b>Discord:</b> YourUsername#1234</li>
-    <li><b>Twitter:</b> <a href="https://twitter.com/your_twitter_handle">@your_twitter_handle</a></li>
+    <li><b>Discord:</b>dakssh</li>
 </ul>
 
 </body>

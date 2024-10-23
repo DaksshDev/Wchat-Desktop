@@ -43,6 +43,7 @@
 		"@heroicons/react": "^2.1.5",
 		"@tabler/icons-react": "^3.19.0",
 		"@types/lodash": "^4.17.10",
+		"@wuild/electron-notification": "^1.0.3",
 		"array-union": "^3.0.1",
 		"auto-launch": "^5.0.5",
 		"clsx": "^2.1.1",
@@ -105,19 +106,23 @@
 		]
 	},
 	"build": {
-    "nsis": {
-      "oneClick": false,
-      "allowElevation": true,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "uninstallDisplayName": "Uninstall Wchat",
-      "uninstallerIcon": "icon.ico",
-      "installerIcon": "icon.ico"
-    },
-    "icon": "icon.ico",
-    "win": {
-      "target": "nsis"
-    }
-  }
+		"nsis": {
+			"oneClick": false,
+			"allowElevation": true,
+			"allowToChangeInstallationDirectory": true,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true,
+			"uninstallDisplayName": "Uninstall Wchat",
+			"uninstallerIcon": "icon.ico",
+			"guid": "com.Stier.w-chat",
+			"installerIcon": "icon.ico"
+		},
+		"icon": "icon.ico",
+		"appId": "com.Stier.w-chat",
+		"buildDependenciesFromSource": "true",
+		"win": {
+			"target": "nsis",
+			"icon": "icon.png"
+		}
+	}
 }

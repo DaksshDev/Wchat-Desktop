@@ -1,4 +1,4 @@
-appId: com.example.ElectronTailwindReactTemplate
+appId: com.example.Wchat
 
 publish:
     provider: github
@@ -9,7 +9,7 @@ files:
         "dist/**/*",
         "build/**/*",
         "node_modules/**/*",
-        "package.json",
+electron-builder.yaml        "package.json",
         "build/icon.*",
     ]
 

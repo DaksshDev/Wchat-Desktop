@@ -5,6 +5,7 @@ module.exports = {
       output: 'dist-dev'  // Output the dev build into a separate folder
     },
     win: {
+      icon: 'icon.png',
       target: 'portable'  // Build as a portable .exe for quick testing
     },
     extraMetadata: {

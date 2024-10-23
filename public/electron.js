@@ -21,7 +21,7 @@ if (!config.isDev) {
 
 app.on("ready", async () => {
 	config.mainWindow = await createMainWindow();
-	app.setAppUserModelId("W Chat");
+	app.setAppUserModelId("w-chat");
 	app.Icon
 	config.tray = createTray();
 

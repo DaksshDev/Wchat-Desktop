@@ -545,7 +545,7 @@ const GroupChat: React.FC<GroupChatProps> = ({
 
 			{/* Right-side Drawer */}
 			<div
-				className={`fixed top-5 right-0 w-80 h-full bg-neutral-950 text-white z-50 select-text transition-transform transform ${
+				className={`fixed top-7 right-0 w-80 h-full bg-neutral-950 text-white z-50 select-text transition-transform transform ${
 					isDrawerOpen ? "translate-x-0" : "translate-x-full"
 				}`}
 			>

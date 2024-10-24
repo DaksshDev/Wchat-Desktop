@@ -38,8 +38,6 @@
 
 .minimize-button {
 	-webkit-app-region: no-drag;
-	margin-left: 10px;
-	margin-right: 10px;
 }
 
 .min-max-button {

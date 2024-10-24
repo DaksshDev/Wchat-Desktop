@@ -48,6 +48,7 @@
 		"clsx": "^2.1.1",
 		"date-fns": "^4.1.0",
 		"electron-is-dev": "^2.0.0",
+		"electron-notify": "^0.1.0",
 		"electron-reloader": "^1.2.3",
 		"electron-updater": "^5.3.0",
 		"emoji-picker-react": "^4.12.0",
@@ -57,6 +58,7 @@
 		"heroicons": "^2.1.5",
 		"linkify-react": "^4.1.3",
 		"lodash": "^4.17.21",
+		"node-notifier": "^10.0.1",
 		"qrcode": "^1.5.4",
 		"react": "^18.2.0",
 		"react-audio-player": "^0.17.0",
@@ -113,7 +115,6 @@
 			"createStartMenuShortcut": true,
 			"uninstallDisplayName": "Uninstall Wchat",
 			"uninstallerIcon": "icon.ico",
-			"guid": "com.Stier.w-chat",
 			"installerIcon": "icon.ico"
 		},
 		"icon": "icon.ico",

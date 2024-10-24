@@ -1,49 +1,52 @@
-const { Notification, shell } = require("electron");
+const { BrowserWindow } = require("electron");
 const { join } = require("path");
+const remote = require("@electron/remote/main");
+const config = require("./config");
 
-exports.showNotification = (title, body, subtitle) => {
-  try {
-    // Windows Toast XML with button
-    const toastXmlString = `
-    <toast activationType="protocol">
-      <visual>
-        <binding template="ToastGeneric">
-          <image id="1" src="${join(__dirname, "..", "icon.ico")}" placement="appLogoOverride" hint-crop="circle"/>
-          <text id="1">${title}</text>
-		  <text id="2">${body}</text>
-          <text id="3" placement="attribution">${subtitle}</text>
-        </binding>
-      </visual>
-      <actions>
-        <action 
-          content="Open Website" 
-          arguments="https://daksshdev.github.io/Wchat/" 
-          activationType="protocol"/>
-		   <action 
-          content="Close" 
-          arguments="close-notification" 
-          activationType="protocol"/>
-      </actions>
-    </toast>
-    `;
+exports.showNotification = async (title, body) => {
+  const notificationWindow = new BrowserWindow({
+    width: 300,
+    height: 100,
+    x: 0,
+    y: 0,
+    resizable: false,
+    alwaysOnTop: true,
+    transparent: true,
+    frame: false,
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true, // Enable remote module here
+      devTools: config.isDev,
+      contextIsolation: false,
+    },
+    icon: config.icon,
+    title: config.appName,
+  });
 
-    // Create the notification
-    const notification = new Notification({
-      toastXml: toastXmlString,
-      silent: false,
-      timeoutType: "default",
-      icon:join(__dirname, "..", "icon.ico"),
-    });
+  // Enable the remote module for this window
+  remote.enable(notificationWindow.webContents);
 
-    // Open the external link when the notification is clicked
-    notification.on('click', () => {
-      shell.openExternal("https://daksshdev.github.io/Wchat/");
-    });
+  // Append title and body to the URL as query parameters
+  const url = config.isDev
+    ? `http://localhost:3000/#/notification?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`
+    : `file://${join(__dirname, "..", "../build/index.html")}/#/notification?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 
-    notification.show();
-    console.log("Notification shown successfully.");
-    return notification;
-  } catch (error) {
-    console.error("Error displaying notification:", error);
-  }
+  await notificationWindow.loadURL(url);
+
+  // Set the notification window position to the bottom-right corner
+  const { width, height } = require("electron").screen.getPrimaryDisplay().workAreaSize;
+  notificationWindow.setPosition(width - 320, height - 120); // Adjust values to fit your screen properly
+
+  notificationWindow.show();
+
+  // Automatically close the notification after 5 seconds
+  setTimeout(() => {
+    notificationWindow.hide();
+  }, 5000);
+
+  // Optional: handle window close
+  notificationWindow.on("close", (e) => {
+    e.preventDefault();
+    notificationWindow.hide(); // Prevent window from being destroyed
+  });
 };

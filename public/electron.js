@@ -9,19 +9,20 @@ const remote = require("@electron/remote/main");
 const config = require("./utils/config");
 
 if (config.isDev) require("electron-reloader")(module);
+app.setAppUserModelId("w-chat");
 
 remote.initialize();
 
 if (!config.isDev) {
 	const autoStart = new AutoLaunch({
 		name: config.appName,
+		Icon: config.icon,
 	});
 	autoStart.enable();
 }
 
 app.on("ready", async () => {
 	config.mainWindow = await createMainWindow();
-	app.setAppUserModelId("w-chat");
 	app.Icon
 	config.tray = createTray();
 
@@ -64,7 +65,7 @@ app.on("ready", async () => {
 		}
 	});
 
-	showNotification(config.appName, "Wchat is running on background", "See Your Application Tray");
+	showNotification(config.appName, "Wchat is running on background");
 });
 
 

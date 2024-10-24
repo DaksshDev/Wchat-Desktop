@@ -493,21 +493,33 @@ export const AppPage: FC = () => {
 
 	useEffect(() => {
 		const updateDateTime = () => {
-			const now = new Date();
-			setCurrentDate(now.toLocaleDateString());
-			setCurrentTime(
-				now.toLocaleTimeString([], {
-					hour: "2-digit",
-					minute: "2-digit",
-				}),
-			);
+		  const now = new Date();
+	  
+		  // Format date to 'Wednesday, 12 June 2029'
+		  const formattedDate = now.toLocaleDateString('en-GB', {
+			weekday: 'long', // Full day name
+			day: 'numeric', // Day of the month
+			month: 'long', // Full month name
+			year: 'numeric', // Full year
+		  });
+	  
+		  setCurrentDate(formattedDate); // Set the formatted date
+	  
+		  // Set the time
+		  setCurrentTime(
+			now.toLocaleTimeString([], {
+			  hour: '2-digit',
+			  minute: '2-digit',
+			})
+		  );
 		};
-
+	  
 		updateDateTime(); // Initial call to set date and time
 		const intervalId = setInterval(updateDateTime, 1000); // Update every second
-
+	  
 		return () => clearInterval(intervalId); // Cleanup on unmount
-	}, []);
+	  }, []);
+	  
 
 	useEffect(() => {
 		fetchUserInfo(); // Fetch user info
@@ -615,7 +627,7 @@ export const AppPage: FC = () => {
 						</div>
 
 						{/* Main Content Area */}
-						<div className="bg-zinc-950 text-white w-3/4 p-8">
+						<div className="bg-zinc-950 text-white w-3/4 p-8 rounded-lg">
 							<h2 className="font-bold text-2xl mb-6">
 								Friend Information
 							</h2>

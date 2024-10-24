@@ -1,6 +1,9 @@
 import { FC, useEffect, useState } from "react";
-import { Maximize, X, Minimize as Contract } from "react-feather"; // Feather icons
 import Logo from "./Logo.png";
+import { VscChromeRestore } from "react-icons/vsc";
+import { VscClose } from "react-icons/vsc";
+import { VscChromeMinimize } from "react-icons/vsc";
+import { VscChromeMaximize } from "react-icons/vsc";
 
 const { getCurrentWindow, app } = window.require("@electron/remote");
 
@@ -45,14 +48,14 @@ export const Titlebar: FC = () => {
 					className="opacity-90"
 				/>
 			</div>
-			<div className="window-controls-container flex space-x-2 p-2">
+			<div className="window-controls-container flex justify-end space-x-1 p-1">
 				<button
 					title="Minimize"
-					className="minimize-button focus:outline-none hover:bg-gray-700 p-2"
+					className="minimize-button focus:outline-none hover:bg-gray-700 p-2 flex items-center justify-center"
 					onClick={onMinimize}
-					style={{ fontSize: "1rem", lineHeight: "1rem" }}
+					style={{ fontSize: "0.938rem" }}
 				>
-					– {/* Custom dash icon for minimize */}
+					<VscChromeMinimize size={20} />
 				</button>
 
 				<button
@@ -62,20 +65,22 @@ export const Titlebar: FC = () => {
 					style={{ fontSize: "0.938rem" }}
 				>
 					{maximized ? (
-						<Contract size={15} /> // Show contract/minimize icon when maximized
+						<VscChromeRestore size={20} />
 					) : (
-						<Maximize size={15} /> // Show maximize icon when not maximized
+						<VscChromeMaximize size={20} />
 					)}
 				</button>
+
 				<button
 					title="Close"
 					className="close-button focus:outline-none hover:bg-red-500 p-2"
 					onClick={onQuit}
 					style={{ fontSize: "0.938rem" }}
 				>
-					<X size={15} />
+					<VscClose size={20} />
 				</button>
 			</div>
 		</div>
 	);
 };
+

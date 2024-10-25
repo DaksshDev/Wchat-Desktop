@@ -110,7 +110,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 	}, []);
 
 	return (
-		<div className="fixed w-screen h-screen bg-black overflow-hidden select-none">
+		<div className="fixed w-[89%] h-screen bg-black overflow-hidden select-none">
 			{/* Greeting on bottom-left */}
 			<h1 className="absolute font-helvetica z-10 text-3xl text-white bottom-28 ml-9">
 				{getGreeting()}

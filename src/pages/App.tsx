@@ -398,6 +398,41 @@ export const AppPage: FC = () => {
 		);
 	};
 
+	// Cancel Friend Request Function
+	const CancelFriendRequest = async (
+		currentUsername: string,
+		senderUsername: string,
+	) => {
+		try {
+			// Get the current user's document reference
+			const currentUserDocRef = doc(db, "users", currentUsername);
+
+			// Remove the sender's username from the current user's friendRequests array
+			await updateDoc(currentUserDocRef, {
+				friendRequests: arrayRemove(senderUsername), // Remove sender from friend requests
+			});
+
+			console.log(
+				`Friend request from ${senderUsername} to ${currentUsername} has been canceled.`,
+			);
+		} catch (error) {
+			console.error("Error canceling friend request: ", error);
+		}
+	};
+
+	// Function to handle cancel friend request button click
+	const handleCancel = (senderUsername: string) => {
+		// Call the CancelFriendRequest function to update Firestore
+		CancelFriendRequest(userInfo?.username, senderUsername);
+
+		// Remove the friend request from the UI immediately
+		setFriendRequests((prevRequests) =>
+			prevRequests.filter(
+				(request) => request.username !== senderUsername,
+			),
+		);
+	};
+
 	// Function to toggle modal visibility
 	const toggleModal = () => {
 		setIsModalVisible((prev) => !prev);
@@ -988,28 +1023,35 @@ export const AppPage: FC = () => {
 								<path d="M379.6-311.85q-110.68 0-188.32-77.64-77.63-77.65-77.63-188.32 0-110.67 77.65-188.27 77.65-77.59 188.31-77.59 110.67 0 188.27 77.63 77.6 77.63 77.6 188.31 0 41.86-10.76 78.94-10.76 37.07-31.81 68.36l207.05 207.28q15.95 16.19 15.95 36.5t-16.19 36.52q-16.15 15.96-36.99 15.96-20.84 0-37.03-15.96L530-355.17q-29.87 20.04-69.32 31.68-39.46 11.64-81.08 11.64Zm-.13-105.17q67.99 0 114.41-46.33 46.42-46.32 46.42-114.31 0-67.99-46.42-114.42-46.42-46.42-114.41-46.42t-114.32 46.42q-46.32 46.43-46.32 114.42 0 67.99 46.32 114.31 46.33 46.33 114.32 46.33Z" />
 							</svg>
 						</button>
-
 						{activeMenuTab === "Friends" && (
-							<div className="dropdown dropdown-end w-72">
-								<button
-									title="Friend Requests"
-									className="text-neutral-400 hover:text-neutral-300"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										height="20px"
-										viewBox="0 -960 960 960"
-										width="20px"
-										fill="#e8eaed"
+							<div className="dropdown dropdown-end relative">
+								<div className="indicator">
+									<button
+										title="Friend Requests"
+										className="text-neutral-400 hover:text-neutral-300"
 									>
-										<path d="M38.2-254.75q0-34.02 15.69-61.25 15.69-27.23 42.65-43.02 58.24-35 125.02-53.5 66.77-18.5 139.24-18.5 72.58 0 139.14 18.5 66.56 18.5 124.32 53.26 27.21 15.76 42.78 42.92 15.57 27.17 15.57 61.59v21.68q0 44.91-30.32 75.04-30.31 30.14-74.9 30.14h-434.3q-44.59 0-74.74-30.14-30.15-30.13-30.15-75.04v-21.68Zm778.5 126.86h-95.44q16.44-23.44 24.89-49.92 8.46-26.47 8.46-55.26v-13.03q0-42.05-19.5-94.39t-66.18-83.53q52.7 7.24 101.65 23.6 48.94 16.35 91.27 41.16 29 15.52 44.48 44.06 15.47 28.54 15.47 58.4v23.73q0 44.91-30.3 75.04-30.3 30.14-74.8 30.14ZM359.9-490.11q-71.67 0-121.77-50.06-50.11-50.05-50.11-121.77t50.11-121.82q50.11-50.11 121.89-50.11 71.55 0 121.78 50.11 50.22 50.1 50.22 121.82T481.8-540.17q-50.23 50.06-121.9 50.06Zm420.17-171.83q0 71.48-50.22 121.65-50.21 50.18-121.51 50.18-11.8 0-26.12-1.38-14.33-1.38-26.81-5.62 27.24-34.75 41.86-76.13 14.62-41.37 14.62-88.71 0-47.33-14.62-88.74-14.62-41.42-41.86-76.18 13.29-4 26.33-5.5t26.45-1.5q71.36 0 121.62 50.22 50.26 50.23 50.26 121.71Zm-636.7 428.87h434.06v-20.45q0-6.24-1.35-9.72-1.35-3.48-3.84-4.52-46.33-26.28-101.89-42.19-55.57-15.9-109.95-15.9-53.9 0-109.94 15.4-56.05 15.41-101.89 42.69-2.49.93-3.85 4.2-1.35 3.27-1.35 9.95v20.54ZM360.22-591.7q29.13 0 49.67-20.73 20.54-20.74 20.54-49.86t-20.84-49.55q-20.84-20.44-49.99-20.44-29.14 0-49.57 20.74-20.42 20.74-20.42 49.87t20.74 49.55q20.74 20.42 49.87 20.42Zm.56 358.63Zm-.76-428.8Z" />
-									</svg>
-								</button>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											height="20px"
+											viewBox="0 -960 960 960"
+											width="20px"
+											fill="#e8eaed"
+										>
+											<path d="M443.61-662.96L380-727.09q-15.96-15.95-15.96-36.65 0-20.69 15.96-36.85l63.61-64.13q15.96-15.95 37.01-15.95 21.05 0 37.01 15.95L581-800.59q16.2 16.16 16.2 36.85 0 20.7-16.2 36.65l-63.37 64.13Q501.67-647 480.62-647q-21.05 0-37.01-15.96ZM80.17-136.91q-21.34 0-36.96-15.63-15.62-15.62-15.62-36.96v-132q0-36.34 26.11-62.46 26.11-26.13 62.47-26.13h134.44q14.48 0 24.84 5.26 10.35 5.26 19.12 15.79 31.23 47.47 79.59 73.21 48.36 25.74 105.85 25.74 56.23 0 105.21-25.74t81.45-73.21q6.53-10.53 17.43-15.79 10.9-5.26 25.29-5.26h134.68q36.33 0 62.46 26.13 26.12 26.12 26.12 62.46v132q0 21.34-15.62 36.96-15.63 15.63-36.96 15.63h-216q-21.34 0-36.97-15.63-15.62-15.62-15.62-36.96v-26.96q-30.24 14.76-64.36 20.76-34.12 6-67.09 6-32.95 0-66.11-5.38t-65.16-20.14v25.72q0 21.34-15.62 36.96-15.63 15.63-36.97 15.63h-216Zm87.83-365q-55.16 0-94.32-39.18t-39.16-94.37q0-54.93 39.18-94.17t94.37-39.24q54.93 0 94.17 39.29 39.24 39.28 39.24 94.19 0 55.16-39.29 94.32T168-501.91Zm624 0q-55.16 0-94.32-39.18t-39.16-94.37q0-54.93 39.18-94.17t94.37-39.24q54.93 0 94.17 39.29 39.24 39.28 39.24 94.19 0 55.16-39.29 94.32T792-501.91Z" />
+										</svg>
+									</button>
+									{friendRequests.length > 0 && (
+										<span className="badge badge-sm indicator-item">
+											{friendRequests.length}{" "}
+											{/* Display number of requests */}
+										</span>
+									)}
+								</div>
 								<div
 									tabIndex={0}
-									className="dropdown-content bg-base-200 mt-2 p-2 shadow-lg rounded-lg z-10 absolute w-[19rem] left-8"
+									className="dropdown-content bg-base-200 mt-2 p-3 shadow-lg rounded-lg z-10 w-96 left-2"
 								>
-									<ul className="menu bg-base-300 p-2 rounded-lg space-y-1 w-72">
+									<ul className="menu bg-base-300 p-2 rounded-lg space-y-1 w-full">
 										{friendRequests.length > 0 ? (
 											friendRequests.map(
 												({
@@ -1018,11 +1060,11 @@ export const AppPage: FC = () => {
 												}) => (
 													<li
 														key={username}
-														className="flex items-center justify-between space-x-4 p-2 hover:bg-base-100 rounded-lg"
+														className="flex items-center justify-between p-2 hover:bg-base-100 rounded-lg"
 													>
-														<div className="flex items-center space-x-4">
-															<div className="avatar">
-																<div className="w-12 h-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+														<div className="flex items-center space-x-3 w-80">
+															<div className="avatar shrink-0">
+																<div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2 overflow-hidden">
 																	<img
 																		src={
 																			profilePicUrl ||
@@ -1032,7 +1074,7 @@ export const AppPage: FC = () => {
 																	/>
 																</div>
 															</div>
-															<div className="flex flex-col flex-grow">
+															<div className="flex flex-col">
 																<span className="text-neutral-200 font-medium text-sm">
 																	{username}
 																</span>
@@ -1042,17 +1084,27 @@ export const AppPage: FC = () => {
 																	request
 																</span>
 															</div>
+															<button
+																className="bg-blue-600 h-7 hover:bg-blue-700 text-white text-xs rounded-full px-4 py-1 transition-transform duration-150 ease-in-out shadow-sm hover:scale-105"
+																onClick={() =>
+																	handleAccept(
+																		username,
+																	)
+																}
+															>
+																Accept
+															</button>
+															<button
+																className="bg-red-600 h-7 hover:bg-red-700 text-white text-xs rounded-full px-4 py-1 transition-transform duration-150 ease-in-out shadow-sm hover:scale-105"
+																onClick={() =>
+																	handleCancel(
+																		username,
+																	)
+																}
+															>
+																X
+															</button>
 														</div>
-														<button
-															className="bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full px-4 py-1 transition-all duration-150 ease-in-out shadow-sm"
-															onClick={() =>
-																handleAccept(
-																	username,
-																)
-															}
-														>
-															Accept
-														</button>
 													</li>
 												),
 											)

@@ -17,4 +17,4 @@ module.exports = {
 		themes: ["dark"],
 		"fontFamily": "Helvetica", // Set Helvetica in Daisy UI theme
 	  },
-};
+}; 

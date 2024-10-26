@@ -2,11 +2,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wchat README</title>
+    <title>BonFire README</title>
 </head>
 <body>
 
-<h1 align="center">Wchat</h1>
+<h1 align="center">BonFire</h1>
 <p align="center">🕹️ <b>A Chat App for Gamers</b></p>
 
 <h3 align="center">🚧 IN DEVELOPMENT 🚧</h3>
@@ -15,7 +15,7 @@
 <hr>
 
 <h2>Overview</h2>
-<p>Wchat is a chat application tailored for gamers, providing real-time communication with a focus on a smooth user experience and gaming-friendly features. Stay connected with your friends, share moments, and coordinate gameplay through a modern chat interface.</p>
+<p>BonFire is a chat application tailored for gamers, providing real-time communication with a focus on a smooth user experience and gaming-friendly features. Stay connected with your friends, share moments, and coordinate gameplay through a modern chat interface.</p>
 
 <hr>
 
@@ -34,7 +34,7 @@
 
 <h3>Step 1: Clone the Repository</h3>
 <pre><code>
-git clone https://github.com/your-username/wchat.git
+git clone https://github.com/DaksshDev/Wchat-Desktop
 cd wchat
 </code></pre>
 

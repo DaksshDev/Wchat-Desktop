@@ -586,7 +586,7 @@ export const AppPage: FC = () => {
 				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
 					<div className="modal-box bg-neutral-950 text-neutral-100 w-full max-w-lg p-6 rounded-lg shadow-lg space-y-4">
 						<h2 className="text-2xl font-semibold text-center">
-							Welcome to Wchat Version 1.0
+							Welcome to BonFire Version 1.0
 						</h2>
 						<p className="text-center text-neutral-300">
 							Explore the latest features and improvements:
@@ -921,7 +921,7 @@ export const AppPage: FC = () => {
 						{/* Toast Content */}
 						<div className="flex flex-col">
 							<span className="text-lg font-medium">
-								Welcome to W Chat!
+								Welcome to BonFire!
 							</span>
 							<p className="text-sm text-neutral-400">
 								Your chat experience just got better.

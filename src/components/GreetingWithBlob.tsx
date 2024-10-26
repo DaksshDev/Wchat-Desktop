@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import LogoIcon from "./LogoIcon.png";
 
 interface GreetingWithBlobProps {
 	currentUsername: string;
@@ -110,25 +111,32 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 	}, []);
 
 	return (
-		<div className="fixed w-[89%] h-screen bg-black overflow-hidden select-none">
+		<div className="relative w-[100%] h-screen right-0 bg-black overflow-hidden select-none rounded-lg">
 			{/* Greeting on bottom-left */}
-			<h1 className="absolute font-helvetica z-10 text-3xl text-white bottom-28 ml-9">
+			<h1 className="absolute font-helvetica z-10 text-3xl text-white bottom-10 ml-9">
 				{getGreeting()}
 			</h1>
 
 			{/* Date on bottom-right */}
-			<p className="absolute z-10 text-lg text-white bottom-28 right-16 mr-9">
+			<p className="absolute z-10 text-lg text-white bottom-10 right-1 mr-2">
 				{currentDate}
 			</p>
 
 			{/* Time on bottom-right */}
-			<p className="absolute z-10 text-3xl text-white bottom-36 right-16 mr-9">
+			<p className="absolute z-10 text-3xl text-white bottom-16 right-1 mr-2">
 				{currentTime}
 			</p>
 
 			{/* Getting Started section in the center */}
 			<div className="absolute z-10 text-center w-full h-full flex flex-col items-center justify-center text-white">
-				<h2 className="text-4xl mb-4">Welcome to W Chat</h2>
+				{/* Logo Image */}
+				<img
+					src={LogoIcon} // Replace with the actual path to your logo
+					alt="BonFire Logo"
+					className="mb-4 w-64 h-64" // Adjust width and height as necessary
+				/>
+
+				<h2 className="text-4xl mb-4">Welcome to BonFire</h2>
 				<p className="text-lg mb-2">
 					Get started by sending a message to your friends!
 				</p>
@@ -140,11 +148,6 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 					to learn more.
 				</p>
 			</div>
-
-			{/* Current time at the bottom */}
-			<p className="absolute z-10 text-center font-helvetica w-full text-white bottom-8 text-2xl">
-				{currentTime}
-			</p>
 
 			{/* Canvas for Aurora effect */}
 			<canvas

@@ -65,7 +65,7 @@ app.on("ready", async () => {
 		}
 	});
 
-	showNotification(config.appName, "Wchat is running on background");
+	showNotification(config.appName, "BonFire is running on background");
 });
 
 

@@ -1,11 +1,11 @@
 {
-	"name": "w-chat",
+	"name": "bonfire",
 	"author": {
 		"email": "dakssh.bhambre@gmail.com",
 		"name": "Dakssh",
 		"url": "https://github.com/DaksshDev"
 	},
-	"description": "Wchat",
+	"description": "BonFire is a chat application tailored for gamers, providing real-time communication with a focus on a smooth user experience and gaming-friendly features. Stay connected with your friends, share moments, and coordinate gameplay through a modern chat interface.",
 	"repository": {
 		"type": "git",
 		"url": ""
@@ -113,16 +113,16 @@
 			"allowToChangeInstallationDirectory": true,
 			"createDesktopShortcut": true,
 			"createStartMenuShortcut": true,
-			"uninstallDisplayName": "Uninstall Wchat",
-			"uninstallerIcon": "icon.ico",
-			"installerIcon": "icon.ico"
+			"uninstallDisplayName": "Uninstall BonFire",
+			"uninstallerIcon": "BonFire-Uninstaller.ico",
+			"installerIcon": "BonFire-Installer.ico"
 		},
 		"icon": "icon.ico",
-		"appId": "com.Stier.w-chat",
+		"appId": "com.BonFire.app",
 		"buildDependenciesFromSource": "true",
 		"win": {
 			"target": "nsis",
-			"icon": "icon.png"
+			"icon": "icon.ico"
 		}
 	}
 }

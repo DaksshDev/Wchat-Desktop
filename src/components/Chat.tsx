@@ -438,7 +438,7 @@ const Chat: React.FC<ChatProps> = ({
 	};
 
 	return (
-		<div className="w-full h-full bg-black rounded-lg flex flex-col overflow-hidden select-none relative z-40">
+		<div className=" w-full h-full right-0 bg-black rounded-lg flex flex-col overflow-hidden select-none relative z-40">
 			<ChatBg />
 			{/* Navbar */}
 			<div className="flex items-center justify-between p-4 bg-neutral-900 text-white shadow-md rounded-lg">

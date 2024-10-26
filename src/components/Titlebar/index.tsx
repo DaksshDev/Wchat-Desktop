@@ -43,8 +43,8 @@ export const Titlebar: FC = () => {
 					id="logo"
 					src={Logo}
 					alt="logo"
-					width={25}
-					height={15}
+					width={90}
+					height={50}
 					className="opacity-90"
 				/>
 			</div>

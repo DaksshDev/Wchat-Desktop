@@ -21,6 +21,7 @@ import { Add } from "../components/Add";
 import Chat from "../components/Chat"; // Adjust the path based on your folder structure
 import GroupChat from "../components/GroupChat"; // Adjust the path based on your folder structure
 import { PhotoProvider, PhotoView } from "react-photo-view";
+import ReactPlayer from "react-player";
 import "react-photo-view/dist/react-photo-view.css";
 
 interface Member {
@@ -219,7 +220,7 @@ export const AppPage: FC = () => {
 		// Adjust the position to ensure it stays on the screen
 		const windowWidth = window.innerWidth;
 		const windowHeight = window.innerHeight;
-		const menuWidth = 300; // Approximate width of context menu
+		const menuWidth = 400; // Approximate width of context menu
 		const menuHeight = 130; // Approximate height of context menu
 
 		// Calculate the new position
@@ -582,25 +583,38 @@ export const AppPage: FC = () => {
 		<Layout>
 			{/* Modal Notification */}
 			{showModal && (
-				<div className="modal modal-open">
-					<div className="modal-box">
-						<h2 className="font-bold text-lg font-helvetica">
+				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
+					<div className="modal-box bg-neutral-950 text-neutral-100 w-full max-w-lg p-6 rounded-lg shadow-lg space-y-4">
+						<h2 className="text-2xl font-semibold text-center">
 							Welcome to Wchat Version 1.0
 						</h2>
-						<p className="py-4 font-helvetica">
-							Here are some features and changes:
+						<p className="text-center text-neutral-300">
+							Explore the latest features and improvements:
 						</p>
-						<ul className="list-disc pl-5 font-helvetica">
+
+						<ul className="list-disc pl-5 space-y-1 text-neutral-300">
 							<li>Group Chats</li>
 							<li>File Uploads (Images, Videos, Audios)</li>
 							<li>Responsive UI</li>
 							<li>Notifications and Alerts</li>
 							<li>Dark Mode Support</li>
 						</ul>
-						<div className="modal-action">
+
+						{/* Embedded YouTube video */}
+						<div className="flex justify-center mt-4">
+							<ReactPlayer
+								url="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+								controls
+								width="100%"
+								height="200px"
+								className="rounded-md overflow-hidden"
+							/>
+						</div>
+
+						<div className="modal-action flex justify-center">
 							<button
-								className="btn font-helvetica"
 								onClick={closeModal}
+								className="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-semibold transition-all"
 							>
 								Close
 							</button>
@@ -934,41 +948,6 @@ export const AppPage: FC = () => {
 				</div>
 			)}
 
-			{activeChat && (
-				<div className="fixed inset-0 top-10 left-16 bg-black rounded-lg overflow-hidden shadow-lg z-40">
-					<Chat
-						friendUsername={activeChat.username}
-						friendPic={activeChat.friendPic || undefined}
-						currentUserPic={userInfo?.profilePicUrl}
-						onClose={() => {
-							setActiveChat(null);
-							setActiveMenuTab("friends");
-						}}
-						currentUsername={userInfo?.username}
-					/>
-				</div>
-			)}
-
-			{activeGroupChat && (
-				<div className="fixed inset-0 top-10 left-16 bg-black rounded-lg overflow-hidden shadow-lg z-40">
-					<GroupChat
-						groupName={activeGroupChat.groupName}
-						members={activeGroupChat.members.map((member) => ({
-							memberName: member.username,
-							memberProfilePicUrl: member.profilePicUrl || "", // Ensure a fallback value
-						}))}
-						groupId={activeGroupChat.groupId}
-						groupPicUrl={activeGroupChat.groupPicUrl}
-						currentUserPic={userInfo?.profilePicUrl}
-						onClose={() => {
-							setActiveGroupChat(null);
-							setActiveMenuTab("friends");
-						}}
-						currentUsername={userInfo?.username}
-					/>
-				</div>
-			)}
-
 			{/* Main wrapper to hold both the sidebar and content */}
 			<div className="flex">
 				{/* Sidebar */}
@@ -1127,21 +1106,18 @@ export const AppPage: FC = () => {
 									<div
 										key={server.id}
 										className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
-										onClick={() =>
+										onClick={() => {
 											setActiveGroupChat({
 												groupName: server.groupName,
 												groupId: server.id,
-												groupPicUrl:
-													server.groupPicUrl || "",
-												members: server.members.length
-													? server.members
-													: [],
-												currentUsername:
-													userInfo?.username,
-												currentUserPic:
-													userInfo?.profilePicUrl,
-											})
-										}
+												groupPicUrl: server.groupPicUrl || "",
+												members: server.members.length ? server.members : [],
+												currentUsername: userInfo?.username,
+												currentUserPic: userInfo?.profilePicUrl,
+											});
+											setActiveChat(null); // Ensure this is executed after setting the active group chat
+										}}
+										
 									>
 										<img
 											src={
@@ -1164,12 +1140,20 @@ export const AppPage: FC = () => {
 										<div
 											key={friend.username}
 											className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
-											onClick={(e) =>
+											onContextMenu={(e) =>
 												openContextMenu(
 													friend.username,
 													e,
 												)
 											}
+											onClick={() => {
+												setActiveChat({
+													username: friend.username,
+												});
+												closeContextMenu();
+												setActiveGroupChat(null);
+												setCurrentView(null); // Make sure to call the setter function to update state
+											}}
 										>
 											<img
 												src={
@@ -1195,6 +1179,21 @@ export const AppPage: FC = () => {
 
 					{/* Profile Section */}
 					<div className="relative flex items-center p-3 bg-neutral-900 mt-auto mb-12 rounded-lg space-x-3">
+						<button
+							title="Add"
+							className=" absolute btn mt-1 ml-1 btn-ghost btn-circle p-1 top-0 right-8"
+							onClick={toggleModal}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								height="20px"
+								viewBox="0 -960 960 960"
+								width="20px"
+								fill="#e8eaed"
+							>
+								<path d="M427.41-428.17H204.65v-105.18h222.76v-223h105.18v223h222.76v105.18H532.59v222.76H427.41v-222.76Z" />
+							</svg>
+						</button>
 						{/* Options Drop-up */}
 						<div className="absolute top-0 right-0 mt-1 ml-1 dropdown dropdown-top">
 							<button
@@ -1267,7 +1266,7 @@ export const AppPage: FC = () => {
 					{/* Context Menu outside the list */}
 					{activeFriend && contextMenuPosition && (
 						<div
-							className="absolute bg-neutral-950 border font-helvetica border-gray-600 text-white rounded-lg shadow-sm shadow-blue-500/50 p-2"
+							className="absolute bg-neutral-950 border font-helvetica border-gray-600 text-white rounded-lg shadow-sm shadow-blue-500/50 p-2 w-52"
 							ref={contextMenuRef} // Add this line
 							style={{
 								top: `${contextMenuPosition.y}px`,
@@ -1373,156 +1372,58 @@ export const AppPage: FC = () => {
 					)}
 				</div>
 
-				{/* Main Content */}
-				<div className="flex-1 ml-16">
-					{/* Navbar */}
-					<div className="navbar bg-neutral-900 shadow-md z-30 relative left-48 w-[86%] ">
-						<div className="flex-1 space-x-4">
-							<a
-								className={`btn btn-ghost text-lg font-helvetica ${
-									currentView === "home"
-										? "text-blue-500 shadow-sm shadow-blue-500/50"
-										: ""
-								}`}
-								onClick={() => handleViewChange("home")}
-							>
-								Home
-							</a>
-						</div>
-						<div className="flex-none">
-							<div className="dropdown dropdown-end">
-								<div
-									tabIndex={0}
-									role="button"
-									className="btn btn-ghost btn-circle"
-								>
-									<div className="indicator">
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											height="24px"
-											viewBox="0 -960 960 960"
-											width="24px"
-											fill="#e8eaed"
-											className="h-5 w-5"
-											stroke="currentColor"
-										>
-											<path d="M124.65-164.65v-113.18h77.13v-273.39q0-92.91 55.48-167.2 55.48-74.3 145.39-99.54v-19.28q0-32.23 22.58-54.79 22.59-22.56 54.85-22.56 32.26 0 54.76 22.56 22.51 22.56 22.51 54.79v19.28q89.91 25 145.89 98.66 55.98 73.65 55.98 168.08v273.39h77.13v113.18h-711.7Zm356.11-332.39ZM480.2-31.7q-38.67 0-65.91-27.3-27.25-27.31-27.25-65.65H573.2q0 38.48-27.32 65.72Q518.56-31.7 480.2-31.7ZM314.96-277.83h331.08v-273.28q0-68.87-48.72-117.13-48.72-48.26-117.4-48.26T363.1-668.21q-48.14 48.29-48.14 116.99v273.39Z" />
-										</svg>
-										{friendRequests.length > 0 && (
-											<span className="badge badge-sm indicator-item">
-												{friendRequests.length}{" "}
-												{/* Display number of requests */}
-											</span>
-										)}
-									</div>
-								</div>
-								<div
-									tabIndex={0}
-									className="card card-compact dropdown-content bg-base-200 z-[1] mt-3 w-96 shadow"
-								>
-									<ul className="menu dropdown-content bg-base-300 rounded-box z-[1] w-96 p-2 shadow">
-										{friendRequests.length > 0 ? (
-											friendRequests.map(
-												({
-													username,
-													profilePicUrl,
-												}) => (
-													<li
-														key={username}
-														className="p-2 hover:bg-base-100 flex items-center"
-													>
-														<div className="flex justify-between items-center w-full">
-															{profilePicUrl && (
-																<img
-																	className="w-10 h-10 rounded-full mr-2"
-																	src={
-																		profilePicUrl
-																	}
-																	alt={`${username}'s profile`}
-																/>
-															)}
-															<span className="flex-1 font-helvetica">
-																{username} has
-																sent you a
-																friend request.
-															</span>
-															<button
-																className="btn bg-blue-600 hover:bg-blue-700 ml-2 font-helvetica"
-																onClick={() =>
-																	handleAccept(
-																		username,
-																	)
-																}
-															>
-																Accept
-															</button>
-														</div>
-													</li>
-												),
-											)
-										) : (
-											<li className="p-2 font-helvetica">
-												No friend requests
-											</li>
-										)}
-									</ul>
-								</div>
+				{/* Main Content Wrapper */}
+				<div className="flex-1 ml-16 rounded-lg overflow-hidden bg-white shadow-lg">
+					<div className="h-full">
+						{currentView === "home" ? (
+							<div className="fixed left-64 w-[calc(100vw-16rem)] bg-neutral-950">
+								<GreetingWithBlob
+									currentDate={currentDate}
+									currentTime={currentTime}
+									currentUsername={welcomeusername}
+								/>
 							</div>
-							<div className="dropdown dropdown-end ">
-								<div
-									title="Account"
-									tabIndex={0}
-									role="button"
-									className="btn btn-ghost btn-circle avatar"
-								>
-									<div className="w-10 h-10 rounded-full skeleton">
-										<img
-											alt=""
-											src={userInfo?.profilePicUrl}
-										/>
-									</div>
-								</div>
-								<ul
-									tabIndex={0}
-									className="menu menu-sm dropdown-content bg-base-300 rounded-box z-[1] mt-3 w-52 p-2 shadow font-helvetica"
-								>
-									<li>
-										<a
-											className="justify-between hover:bg-blue-600"
-											onClick={openUserModal}
-										>
-											Profile
-											<span className="badge font-helvetica">
-												New
-											</span>
-										</a>
-									</li>
-									<li>
-										<a className="hover:bg-blue-600">
-											Settings
-										</a>
-									</li>
-									<li>
-										<a
-											className="hover:bg-red-600"
-											onClick={logout}
-										>
-											Logout
-										</a>
-									</li>
-								</ul>
+						) : null}
+						{activeChat && (
+							<div className="fixed left-64 w-[calc(100vw-16rem)] h-[96.5%] bg-neutral-950 z-auto">
+								<Chat
+									friendUsername={activeChat.username}
+									friendPic={
+										activeChat.friendPic || undefined
+									}
+									currentUserPic={userInfo?.profilePicUrl}
+									onClose={() => {
+										setActiveChat(null);
+										setCurrentView("home");
+									}}
+									currentUsername={userInfo?.username}
+								/>
 							</div>
-						</div>
+						)}
+
+						{activeGroupChat && (
+							<div className="fixed left-64 w-[calc(100vw-16rem)] h-[96.5%] bg-neutral-950 z-auto">
+								<GroupChat
+									groupName={activeGroupChat.groupName}
+									members={activeGroupChat.members.map(
+										(member) => ({
+											memberName: member.username,
+											memberProfilePicUrl:
+												member.profilePicUrl || "", // Ensure a fallback value
+										}),
+									)}
+									groupId={activeGroupChat.groupId}
+									groupPicUrl={activeGroupChat.groupPicUrl}
+									currentUserPic={userInfo?.profilePicUrl}
+									onClose={() => {
+										setActiveGroupChat(null);
+										setCurrentView("home");
+									}}
+									currentUsername={userInfo?.username}
+								/>
+							</div>
+						)}
 					</div>
-					{currentView === "home" ? (
-						<div className="fixed left-64 w-[calc(100vw-16rem)]">
-							<GreetingWithBlob
-								currentDate={currentDate}
-								currentTime={currentTime}
-								currentUsername={welcomeusername}
-							/>
-						</div>
-					) : null}
 				</div>
 			</div>
 		</Layout>

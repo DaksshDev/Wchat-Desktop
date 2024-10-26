@@ -116,125 +116,119 @@ export const Add: React.FC<AddProps> = ({
 
 	const handleCreateGroup = async () => {
 		if (!groupName || !groupID) {
-		  toggleModal();
-		  setIsGroupModalVisible(false);
-		  setShowToast(true);
-		  setToastMessage("Please enter a group name and ID");
-		  resetModalFields();
-		  return;
+			setShowToast(true);
+			setToastMessage("Please enter a group name and ID");
+			resetModalFields();
+			return;
 		}
-	  
+
 		if (selectedMembers.length < 1) {
-		  setShowToast(true);
-		  setToastMessage("Please select at least 2 members for the group");
-		  return;
+			setShowToast(true);
+			setToastMessage("Please select at least 2 members for the group");
+			return;
 		}
-	  
+
 		let groupPicUrl = avatarURL; // Fallback to general avatar URL
-	  
+
 		try {
-		  if (groupPhoto) {
-			// Upload the provided group photo to Firebase Storage
-			const storagePath = `groupPhotos/${groupID}/${groupPhoto.name}`;
-			const imageRef = sref(storage, storagePath);
-			const uploadResult = await uploadBytes(imageRef, groupPhoto);
-			groupPicUrl = await getDownloadURL(uploadResult.ref);
-		  } else {
-			// Fetch default avatar based on the group name
-			const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${groupName}&background=random&size=512`;
-			const response = await fetch(defaultAvatarUrl);
-			const blob = await response.blob();
-	  
-			// Upload the default avatar to Firebase Storage
-			const storagePath = `groupPhotos/${groupID}/default_avatar.png`;
-			const imageRef = sref(storage, storagePath);
-			const uploadResult = await uploadBytes(imageRef, blob);
-			groupPicUrl = await getDownloadURL(uploadResult.ref);
-		  }
+			if (groupPhoto) {
+				// Upload the provided group photo to Firebase Storage
+				const storagePath = `groupPhotos/${groupID}/${groupPhoto.name}`;
+				const imageRef = sref(storage, storagePath);
+				const uploadResult = await uploadBytes(imageRef, groupPhoto);
+				groupPicUrl = await getDownloadURL(uploadResult.ref);
+			} else {
+				// Fetch default avatar based on the group name
+				const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${groupName}&background=random&size=512`;
+				const response = await fetch(defaultAvatarUrl);
+				const blob = await response.blob();
+
+				// Upload the default avatar to Firebase Storage
+				const storagePath = `groupPhotos/${groupID}/default_avatar.png`;
+				const imageRef = sref(storage, storagePath);
+				const uploadResult = await uploadBytes(imageRef, blob);
+				groupPicUrl = await getDownloadURL(uploadResult.ref);
+			}
 		} catch (error) {
-		  console.error("Error uploading group photo:", error);
-		  toggleModal();
-		  resetModalFields();
-		  setIsGroupModalVisible(false);
-		  setShowToast(true);
-		  setToastMessage("Failed to upload group photo");
-		  return;
+			console.error("Error uploading group photo:", error);
+			resetModalFields();
+			setShowToast(true);
+			setToastMessage("Failed to upload group photo");
+			return;
 		}
-	  
+
 		// Check if the group ID already exists
 		const groupRef = ref(rtdb, `groups/${groupID}`);
 		const groupSnapshot = await get(groupRef);
-	  
+
 		if (groupSnapshot.exists()) {
-		  toggleModal();
-		  setIsGroupModalVisible(false);
-		  resetModalFields();
-		  setShowToast(true);
-		  setToastMessage("Group ID already exists!");
-		  return;
+			resetModalFields();
+			setShowToast(true);
+			setToastMessage("Group ID already exists!");
+			return;
 		}
-	  
+
 		// Create the group data object
 		const groupData: GroupData = {
-		  name: groupName,
-		  id: groupID,
-		  description: groupDescription,
-		  photoURL: groupPicUrl, // Set the group photo URL here
-		  members: {},
+			name: groupName,
+			id: groupID,
+			description: groupDescription,
+			photoURL: groupPicUrl, // Set the group photo URL here
+			members: {},
 		};
-	  
+
 		const currentUser = currentUsername; // Function to get the current user
 		groupData.members[currentUser] = {
-		  joinedAt: new Date().toISOString(),
-		  role: "ADMIN", // Current user is the admin
-		  messages: {},
+			joinedAt: new Date().toISOString(),
+			role: "ADMIN", // Current user is the admin
+			messages: {},
 		};
-	  
+
 		// Add other selected members with null roles
 		selectedMembers.forEach((member) => {
-		  groupData.members[member] = {
-			joinedAt: new Date().toISOString(),
-			role: null, // Role can be assigned later
-			messages: {}, // Initialize an empty object for messages
-		  };
+			groupData.members[member] = {
+				joinedAt: new Date().toISOString(),
+				role: null, // Role can be assigned later
+				messages: {}, // Initialize an empty object for messages
+			};
 		});
-	  
+
 		try {
-		  // Add the group to the Realtime Database
-		  await set(groupRef, groupData);
-	  
-		  // Add group to each member's Firestore 'serverlist' subcollection
-		  const allMembers = [...selectedMembers, currentUser]; // Include current user
-	  
-		  const serverData = {
-			groupName: groupName,
-			groupID: groupID,
-			groupPicUrl: groupPicUrl, // Include the group photo URL in the serverlist data
-		  };
-	  
-		  const promises = allMembers.map(async (member) => {
-			const userDocRef = doc(db, `users/${member}/serverlist/${groupID}`);
-			await setDoc(userDocRef, serverData);
-		  });
-	  
-		  await Promise.all(promises); // Wait for all member updates
-	  
-		  setShowToast(true);
-		  setToastMessage("Group created successfully!");
-		  resetModalFields();
-		  setIsGroupModalVisible(false);
-		  toggleModal(); // Close the modal after successful creation
+			// Add the group to the Realtime Database
+			await set(groupRef, groupData);
+
+			// Add group to each member's Firestore 'serverlist' subcollection
+			const allMembers = [...selectedMembers, currentUser]; // Include current user
+
+			const serverData = {
+				groupName: groupName,
+				groupID: groupID,
+				groupPicUrl: groupPicUrl, // Include the group photo URL in the serverlist data
+			};
+
+			const promises = allMembers.map(async (member) => {
+				const userDocRef = doc(
+					db,
+					`users/${member}/serverlist/${groupID}`,
+				);
+				await setDoc(userDocRef, serverData);
+			});
+
+			await Promise.all(promises); // Wait for all member updates
+
+			setShowToast(true);
+			setToastMessage("Group created successfully!");
+			resetModalFields();
+			setIsGroupModalVisible(false);
+			toggleModal(); // Close the modal after successful creation
 		} catch (error) {
-		  console.error("Error creating group:", error);
-		  setIsGroupModalVisible(false);
-		  resetModalFields();
-		  toggleModal();
-		  setShowToast(true);
-		  setToastMessage("Failed to create group");
+			console.error("Error creating group:", error);
+			resetModalFields();
+			setShowToast(true);
+			setToastMessage("Failed to create group");
 		}
-	  };	  
-	
-	
+	};
+
 	// Helper function to reset the modal input fields
 	const resetModalFields = () => {
 		setGroupName("");
@@ -383,57 +377,68 @@ export const Add: React.FC<AddProps> = ({
 	return (
 		<div className="flex flex-col items-center justify-center rounded-lg text-white font-helvetica">
 			{isModalVisible && (
-				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 z-40">
-					<div className="modal-box bg-zinc-900 text-white w-full max-w-4xl min-h-fit">
-						<h2 className="text-center pb-3 text-4xl font-bold">
+				<div className="fixed inset-0 flex items-center justify-center bg-neutral-950 bg-opacity-90 z-40">
+					<div className="modal-box bg-neutral-900 text-neutral-50 w-full max-w-4xl p-6 rounded-lg">
+						<h2 className="text-center pb-4 text-4xl font-bold">
 							Hello There! 👋
 						</h2>
-						<p className="text-center pb-3">
-							Add Friends Or Create/Join a server
+						<p className="text-center pb-6 text-neutral-300">
+							Add Friends or Create/Join a Group
 						</p>
 
-						<div className="tabs">
+						<div className="tabs flex justify-center space-x-8 pb-2 border-b border-neutral-700 relative">
 							<a
-								className={`tab tab-bordered ${
+								className={`tab font-semibold pb-1 transition-colors ${
 									activeTab === "users"
-										? "tab-active bg-blue-600 rounded-md"
-										: ""
+										? "text-blue-500"
+										: "text-neutral-400"
 								}`}
 								onClick={() => setActiveTab("users")}
 							>
 								<b>Friends</b>
 							</a>
 							<a
-								className={`tab tab-bordered ${
+								className={`tab font-semibold pb-1 transition-colors ${
 									activeTab === "groups"
-										? "tab-active bg-blue-600 rounded-md"
-										: ""
+										? "text-blue-500"
+										: "text-neutral-400"
 								}`}
 								onClick={() => setActiveTab("groups")}
 							>
 								<b>Groups</b>
 							</a>
+							{/* Animated underline */}
+							<span
+								className={`absolute bottom-0 h-0.5 w-14 rounded-full bg-blue-500 transition-all duration-300 transform ${
+									activeTab === "users"
+										? "left-[38.888%] -translate-x-6"
+										: "left-[52%] -translate-x-6"
+								}`}
+							></span>
 						</div>
 
-						<div className="mt-4 overflow-visible h-full min-w-fit">
+						<div className="mt-6 overflow-visible h-full min-w-fit">
 							{activeTab === "users" && (
 								<div>
-									<h3 className="font-semibold">
+									<h3 className="font-semibold mb-3 text-neutral-300">
 										Add by Username:
 									</h3>
 									<input
 										type="text"
 										placeholder="Enter username"
-										className="input input-bordered w-full input-info bg-gray-700 text-white"
+										className="input input-bordered w-full bg-neutral-800 text-neutral-50 placeholder-neutral-500"
 										onChange={(e) =>
 											handleSearchChange(e.target.value)
 										}
 										value={inputValue}
 									/>
+									{isSearching && (
+										<p className="text-neutral-400 mt-2">
+											Searching...
+										</p>
+									)}
 
-									{isSearching && <p>Searching...</p>}
-
-									<div className="mt-2 max-h-40 overflow-auto rounded-md bg-zinc-800">
+									<div className="mt-4 max-h-40 overflow-auto rounded-md bg-neutral-800">
 										{users.length > 0 ? (
 											users.slice(0, 3).map((user) => (
 												<div
@@ -443,7 +448,7 @@ export const Add: React.FC<AddProps> = ({
 															user.username,
 														)
 													}
-													className="flex items-center p-2 hover:bg-gray-700 rounded-lg cursor-pointer"
+													className="flex items-center p-2 hover:bg-neutral-700 rounded-lg cursor-pointer"
 												>
 													<img
 														src={user.profilePicUrl}
@@ -454,51 +459,52 @@ export const Add: React.FC<AddProps> = ({
 												</div>
 											))
 										) : searchTerm && !isSearching ? (
-											<p></p>
+											<p className="text-neutral-400">
+												No results found
+											</p>
 										) : null}
 									</div>
 
 									<button
 										onClick={handleSendFriendRequest}
-										className="btn bg-blue-600 hover:bg-blue-700 w-full pt-2 mt-4"
+										className="btn bg-blue-600 hover:bg-blue-700 w-full mt-4"
 									>
 										Add
 									</button>
 								</div>
 							)}
+							{activeTab === "groups" && (
+								<div>
+									<h3 className="font-semibold mb-4 text-neutral-300">
+										Create or Join a Group:
+									</h3>
+
+									<div className="my-4">
+										<button
+											className="btn bg-green-600 hover:bg-green-700 w-full"
+											onClick={() =>
+												setIsGroupModalVisible(true)
+											}
+										>
+											Create My Own
+										</button>
+									</div>
+
+									<div className="mt-4">
+										<input
+											type="text"
+											placeholder="I have a Group ID"
+											className="input input-bordered w-full bg-neutral-800 text-neutral-50 placeholder-neutral-500"
+										/>
+										<button className="btn bg-blue-600 hover:bg-blue-700 w-full mt-4">
+											Join Group
+										</button>
+									</div>
+								</div>
+							)}
 						</div>
 
-						{activeTab === "groups" && (
-							<div>
-								<h3 className="font-semibold">
-									Create or Join a Group:
-								</h3>
-
-								<div className="my-4">
-									<button
-										className="btn bg-green-600 hover:bg-green-700 w-full"
-										onClick={() =>
-											setIsGroupModalVisible(true)
-										}
-									>
-										Create My Own
-									</button>
-								</div>
-
-								<div className="mt-4">
-									<input
-										type="text"
-										placeholder="I have a Group ID"
-										className="input input-bordered w-full input-info bg-gray-700 text-white"
-									/>
-									<button className="btn bg-blue-600 hover:bg-blue-700 w-full mt-4">
-										Join Group
-									</button>
-								</div>
-							</div>
-						)}
-
-						<div className="modal-action">
+						<div className="modal-action mt-6">
 							<button
 								onClick={toggleModal}
 								className="btn bg-red-500 hover:bg-red-600"
@@ -512,29 +518,30 @@ export const Add: React.FC<AddProps> = ({
 
 			{/* Toast Notification */}
 			{showToast && (
-				<div className="toast toast-bottom toast-end z-40">
-					<div className="alert alert-info bg-blue-700">
-						<span className="text-lg">{toastMessage}</span>
-						<div className="toast-action">
-							<a
-								className="underline cursor-pointer"
-								onClick={closeToast}
-							>
-								Close
-							</a>
-						</div>
+				<div className="toast toast-bottom toast-end z-50">
+					<div className="alert bg-neutral-950 text-neutral-200 shadow-lg rounded-lg px-6 py-4 flex items-center justify-between space-x-4">
+						<span className="text-base font-medium">
+							{toastMessage}
+						</span>
+						<button
+							onClick={closeToast}
+							className="btn bg-blue-600 hover:bg-blue-700 text-neutral-100 px-4 py-1 rounded-xl font-semibold transition-all"
+						>
+							OK
+						</button>
 					</div>
 				</div>
 			)}
 
 			{isGroupModalVisible && (
-				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 z-40">
-					<div className="modal-box bg-zinc-900 text-white w-full max-w-4xl min-h-fit space-y-3 p-6 rounded-lg shadow-lg">
-						<h2 className="text-center pb-3 text-4xl font-bold">
+				<div className="fixed inset-0 flex items-center justify-center bg-neutral-900 bg-opacity-90 z-40">
+					<div className="modal-box bg-neutral-950 fixed min-h-screen overflow-hidden text-neutral-100 w-full max-w-2xl p-8 rounded-lg shadow-2xl space-y-6">
+						<h2 className="text-center text-3xl font-extrabold mb-6">
 							Create Group
 						</h2>
 
-						<div className="flex justify-center mb-4">
+						{/* Group Photo Upload */}
+						<div className="flex justify-center mb-6">
 							<label
 								htmlFor="groupPhotoUpload"
 								className="cursor-pointer"
@@ -542,7 +549,7 @@ export const Add: React.FC<AddProps> = ({
 								<img
 									src={avatarURL}
 									alt="Click to Upload!"
-									className="w-24 h-24 rounded-full border-2 border-gray-300 hover:opacity-80 transition-opacity"
+									className="w-24 h-24 rounded-full border-2 border-neutral-600 hover:opacity-90 transition-opacity shadow-md"
 								/>
 							</label>
 							<input
@@ -554,54 +561,58 @@ export const Add: React.FC<AddProps> = ({
 							/>
 						</div>
 
+						{/* Group Name, ID, and Description */}
 						<input
 							type="text"
 							placeholder="Group Name"
-							className="input input-bordered w-full input-info bg-gray-700 text-white"
+							required={true}
+							className="input input-bordered w-full bg-neutral-800 text-neutral-100 border-neutral-700 focus:border-blue-500 placeholder-neutral-500"
 							value={groupName}
 							onChange={(e) => setGroupName(e.target.value)}
 						/>
 						<input
 							type="text"
 							placeholder="Group ID"
-							className="input input-bordered w-full input-info bg-gray-700 text-white"
+							required={true}
+							className="input input-bordered w-full bg-neutral-800 text-neutral-100 border-neutral-700 focus:border-blue-500 placeholder-neutral-500"
 							value={groupID}
 							onChange={(e) => setGroupID(e.target.value)}
 						/>
 						<textarea
 							placeholder="Group Description"
-							className="input input-bordered w-full input-info bg-gray-700 text-white"
+							required={true}
+							className="textarea textarea-bordered w-full bg-neutral-800 text-neutral-100 border-neutral-700 focus:border-blue-500 placeholder-neutral-500 resize-none"
 							value={groupDescription}
 							onChange={(e) =>
 								setGroupDescription(e.target.value)
 							}
 						/>
 
-						<div className="mt-4">
-							<h3 className="text-lg font-semibold">
+						{/* Members Selection */}
+						<div>
+							<h3 className="text-lg font-semibold mb-3">
 								Set Members
 							</h3>
-							<div className="h-48 overflow-y-auto bg-gray-800 rounded-md p-2">
-								{/* Assuming you have a members array from your friend list */}
+							<div className="h-40 overflow-y-auto bg-neutral-900 rounded-lg p-3 space-y-2">
 								{friendsList.map((friend) => (
 									<div
 										key={friend.username}
-										className="flex items-center space-x-2 mb-2"
+										className="flex items-center space-x-3 p-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg cursor-pointer transition"
 									>
 										<img
 											src={friend.profilePicUrl}
 											alt={friend.username}
 											className="w-10 h-10 rounded-full"
 										/>
-										<label className="cursor-pointer flex items-center">
+										<label className="flex items-center cursor-pointer">
 											<input
 												type="checkbox"
-												className="mr-2"
+												className="checkbox mr-3"
 												onChange={() =>
 													handleMemberSelect(
 														friend.username,
 													)
-												} // Handle member selection
+												}
 											/>
 											<span>{friend.username}</span>
 										</label>
@@ -610,19 +621,20 @@ export const Add: React.FC<AddProps> = ({
 							</div>
 						</div>
 
+						{/* Action Buttons */}
 						<button
 							onClick={handleCreateGroup}
-							className="btn bg-green-600 hover:bg-green-700 w-full mt-4"
+							className="btn bg-blue-600 hover:bg-blue-700 w-full py-3 mt-4 font-semibold text-neutral-100 rounded-lg"
 						>
 							Create Group
 						</button>
-						<div className="modal-action">
+						<div className="modal-action mt-3">
 							<button
 								onClick={() => {
 									setIsGroupModalVisible(false);
 									toggleModal();
 								}}
-								className="btn bg-red-500 hover:bg-red-600"
+								className="btn bg-red-600 hover:bg-red-700 py-2 px-6 rounded-lg text-neutral-100 font-semibold"
 							>
 								Close
 							</button>

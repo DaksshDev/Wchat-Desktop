@@ -2,7 +2,7 @@ appId: com.example.Wchat
 
 publish:
     provider: github
-    token: YOUR_GITHUB_TOKEN
+    token: YOUR_GITHUB_TOKEN_FOR_TEMPLATE
 
 files:
     [

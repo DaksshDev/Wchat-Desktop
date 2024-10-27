@@ -19,7 +19,6 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Layout } from "../components/Layout";
 import Asthetic from "../components/Asthetic";
 
-
 export const IndexPage: FC = () => {
 	const [isLogin, setIsLogin] = useState(false);
 	const [email, setEmail] = useState("");
@@ -37,13 +36,12 @@ export const IndexPage: FC = () => {
 
 	const navigate = useNavigate();
 
-    useEffect(() => {
-        const storedUsername = localStorage.getItem("username");
-        if (storedUsername) {
-            navigate("App"); // Redirect to AppPage if the username exists
-        }
-    }, [navigate]);
-
+	useEffect(() => {
+		const storedUsername = localStorage.getItem("username");
+		if (storedUsername) {
+			navigate("App"); // Redirect to AppPage if the username exists
+		}
+	}, [navigate]);
 
 	// Check if username exists
 	const checkUsernameExists = async (username: string): Promise<boolean> => {
@@ -78,7 +76,7 @@ export const IndexPage: FC = () => {
 				);
 				const userId = userCredential.user.uid;
 				const user = userCredential.user;
-                const token = await user.getIdToken(); // Retrieve token from the user object
+				const token = await user.getIdToken(); // Retrieve token from the user object
 
 				// Fetch username using the userId and store in localStorage
 				const fetchedUsername = await fetchUsernameByUserId(userId);
@@ -110,7 +108,7 @@ export const IndexPage: FC = () => {
 	const handleModalSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setLoading(true);
-	
+
 		try {
 			// Create Firebase Auth user only after the modal form has been submitted
 			const userCredential = await createUserWithEmailAndPassword(
@@ -120,32 +118,42 @@ export const IndexPage: FC = () => {
 			);
 			const userId = userCredential.user.uid;
 			const user = userCredential.user;
-	
+
 			// Validate profile picture size (no larger than 10MB)
 			if (profilePic && profilePic.size > 10 * 1024 * 1024) {
 				setError("Profile picture must be smaller than 10MB.");
 				setLoading(false);
 				return;
 			}
-	
+
 			let profilePicUrl = "";
-	
+
 			if (profilePic) {
 				// Upload profile picture to Firebase Storage with progress tracking
-				const profilePicRef = ref(storage, `users/${username}/profilePicture`);
-				const uploadTask = uploadBytesResumable(profilePicRef, profilePic);
-	
+				const profilePicRef = ref(
+					storage,
+					`users/${username}/profilePicture`,
+				);
+				const uploadTask = uploadBytesResumable(
+					profilePicRef,
+					profilePic,
+				);
+
 				uploadTask.on(
 					"state_changed",
 					(snapshot) => {
-						const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+						const progress =
+							(snapshot.bytesTransferred / snapshot.totalBytes) *
+							100;
 						setUploadProgress(Math.floor(progress));
 					},
 					(error) => {
 						setError("Error uploading image: " + error.message);
 					},
 					async () => {
-						profilePicUrl = await getDownloadURL(uploadTask.snapshot.ref);
+						profilePicUrl = await getDownloadURL(
+							uploadTask.snapshot.ref,
+						);
 						await saveUserData(profilePicUrl, userId); // Save user data after successful upload
 					},
 				);
@@ -161,7 +169,7 @@ export const IndexPage: FC = () => {
 			setShowModal(false);
 		}
 	};
-	
+
 	// Function to save user data in Firestore
 	const saveUserData = async (profilePicUrl: string, userId: string) => {
 		await setDoc(doc(db, "users", username), {
@@ -265,7 +273,9 @@ export const IndexPage: FC = () => {
 						<div className="form-control mt-6">
 							<button
 								className={`btn btn-primary w-full ${
-									loading ? "loading loading-sm loading-spinner" : ""
+									loading
+										? "loading loading-sm loading-spinner"
+										: ""
 								}`}
 								disabled={loading}
 							>
@@ -288,7 +298,6 @@ export const IndexPage: FC = () => {
 					</p>
 				</div>
 			</div>
-
 			{/* Modal for additional details */}
 			{showModal && (
 				<div className="modal modal-open">
@@ -344,7 +353,10 @@ export const IndexPage: FC = () => {
 									</progress>
 								)}
 							</div>
-							<span className=" label-text text-warning justify-center items-center text-center">If profile picture Is not uploaded then It will use <b>default profile picture</b></span>
+							<span className=" label-text text-warning justify-center items-center text-center">
+								If profile picture Is not uploaded then It will
+								use <b>default profile picture</b>
+							</span>
 
 							{/* Gender Dropdown */}
 							<div className="form-control">

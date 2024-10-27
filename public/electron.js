@@ -9,7 +9,8 @@ const remote = require("@electron/remote/main");
 const config = require("./utils/config");
 
 if (config.isDev) require("electron-reloader")(module);
-app.setAppUserModelId("w-chat");
+app.setAppUserModelId('BonFire');
+app.setAsDefaultProtocolClient('Bonfire');
 
 remote.initialize();
 
@@ -65,7 +66,7 @@ app.on("ready", async () => {
 		}
 	});
 
-	config.notificationwindow = showNotification();
+	config.notificationwindow = showNotification("BonFire is running in background", "See application tray for more information");
 });
 
 

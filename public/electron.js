@@ -65,7 +65,7 @@ app.on("ready", async () => {
 		}
 	});
 
-	showNotification(config.appName, "BonFire is running on background");
+	config.notificationwindow = showNotification();
 });
 
 

@@ -59,3 +59,4 @@ exports.createPopupWindow = async () => {
 
 	return window;
 };
+

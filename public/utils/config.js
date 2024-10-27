@@ -7,6 +7,7 @@ let config = {
 	tray: null,
 	isQuiting: false,
 	mainWindow: null,
+	notificationwindow: null,
 	popupWindow: null,
 	isDev,
 };

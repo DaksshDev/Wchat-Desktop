@@ -3,15 +3,14 @@ const { join } = require("path");
 const remote = require("@electron/remote/main");
 const config = require("./config");
 
-exports.showNotification = async (title, body) => {
+exports.showNotification = async () => {
 	const notificationWindow = new BrowserWindow({
 		width: 300,
 		height: 100,
 		x: 0,
 		y: 0,
-		resizable: false,
+		resizable: true,
 		alwaysOnTop: true,
-		transparent: true,
 		frame: false,
 		webPreferences: {
 			nodeIntegration: true,
@@ -23,23 +22,15 @@ exports.showNotification = async (title, body) => {
 		title: config.appName,
 	});
 
+	//"http://localhost:3000/#/notification"
 	// Enable the remote module for this window
 	remote.enable(notificationWindow.webContents);
 
-	// Append title and body to the URL as query parameters
-	const url = config.isDev
-		? `http://localhost:3000/#/notification?title=${encodeURIComponent(
-				title,
-		  )}&body=${encodeURIComponent(body)}`
-		: `file://${join(
-				__dirname,
-				"..",
-				"../build/index.html",
-		  )}/#/notification?title=${encodeURIComponent(
-				title,
-		  )}&body=${encodeURIComponent(body)}`;
-
-	await notificationWindow.loadURL(url);
+	await notificationWindow.loadURL(
+		config.isDev
+			? `file://${join(__dirname, "..", "../build/index.html/notification")}`
+			: `file://${join(__dirname, "../build/index.html/#/notification")}`,
+	);
 
 	// Set the notification window position to the bottom-right corner
 	const { width, height } =
@@ -48,10 +39,10 @@ exports.showNotification = async (title, body) => {
 
 	notificationWindow.show();
 
-	// Automatically close the notification after 5 seconds
+	// Automatically close the notification after 15 seconds
 	setTimeout(() => {
 		notificationWindow.hide();
-	}, 5000);
+	}, 15000);
 
 		// Intercept external link clicks and prevent opening new windows
 		notificationWindow.webContents.setWindowOpenHandler(({ url }) => {

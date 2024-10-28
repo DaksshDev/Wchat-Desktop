@@ -27,7 +27,7 @@ exports.createPopupWindow = async () => {
 	await window.loadURL(
 		config.isDev
 			? "http://localhost:3000/#/popup"
-			: `file://${join(__dirname, "..", "../build/index.html#popup")}`,
+			: `file://${join(__dirname, "..", "../build/index.html#/popup")}`,
 	);
 
 	window.hide();

@@ -583,7 +583,7 @@ export const AppPage: FC = () => {
 		<Layout>
 			{/* Modal Notification */}
 			{showModal && (
-				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
+				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50" data-theme="dark">
 					<div className="modal-box bg-neutral-950 text-neutral-100 w-full max-w-lg p-6 rounded-lg shadow-lg space-y-4">
 						<h2 className="text-2xl font-semibold text-center">
 							Welcome to BonFire Version 1.0
@@ -632,7 +632,7 @@ export const AppPage: FC = () => {
 			/>
 
 			{showFriendModal && (
-				<div className="modal modal-open">
+				<div className="modal modal-open" data-theme="dark">
 					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
 						{/* Close Button */}
 						<button
@@ -776,7 +776,7 @@ export const AppPage: FC = () => {
 			)}
 
 			{showUserModal && (
-				<div className="modal modal-open">
+				<div className="modal modal-open" data-theme="dark">
 					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
 						{" "}
 						{/* Darker background */}
@@ -916,7 +916,7 @@ export const AppPage: FC = () => {
 			)}
 			{/* Toast Notification */}
 			{showToast && (
-				<div className="toast toast-bottom toast-end z-40 font-helvetica">
+				<div className="toast toast-bottom toast-end z-40 font-helvetica" data-theme="dark">
 					<div className="alert bg-neutral-950 text-neutral-100 shadow-lg flex items-center space-x-4 rounded-lg p-4">
 						{/* Toast Content */}
 						<div className="flex flex-col">
@@ -949,7 +949,7 @@ export const AppPage: FC = () => {
 			)}
 
 			{/* Main wrapper to hold both the sidebar and content */}
-			<div className="flex">
+			<div className="flex" data-theme="dark">
 				{/* Sidebar */}
 				<div className="fixed left-0 h-screen w-64 bg-neutral-950 text-white flex flex-col z-10 font-helvetica shadow-lg">
 					{/* Tab Switcher */}

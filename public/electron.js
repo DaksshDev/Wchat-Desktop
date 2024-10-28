@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, nativeTheme } = require("electron");
 const { autoUpdater } = require("electron-updater");
 const { createTray } = require("./utils/createTray");
 const { createMainWindow } = require("./utils/createMainWindow");
@@ -22,10 +22,12 @@ if (!config.isDev) {
 	autoStart.enable();
 }
 
+
 app.on("ready", async () => {
 	config.mainWindow = await createMainWindow();
 	app.Icon
 	config.tray = createTray();
+	nativeTheme.themeSource = 'dark'
 
 	// Intercept external link clicks and prevent opening new windows
 	config.mainWindow.webContents.setWindowOpenHandler(({ url }) => {

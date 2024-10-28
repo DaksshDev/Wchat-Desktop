@@ -1,7 +1,7 @@
 /** @type {import("tailwindcss").Config} */
 module.exports = {
 	content: ["./src/**/*.{js,jsx,ts,tsx}", "./public/index.html"],
-	darkMode: "media",
+	darkMode:['media', '[data-theme="dark"]'],
 	theme: {
 		extend: {
 		  fontFamily: {
@@ -14,7 +14,7 @@ module.exports = {
 		require('tailwind-scrollbar')({ nocompatible: true })
 	  ],
 	  daisyui: {
-		themes: ["dark"],
+		themes: ["dark", "black", "dark"],
 		"fontFamily": "Helvetica", // Set Helvetica in Daisy UI theme
 	  },
 }; 

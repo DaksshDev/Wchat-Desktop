@@ -1,5 +1,6 @@
 import { FC, useEffect, useState, useCallback, useRef } from "react";
 import { db, rtdb } from "./FirebaseConfig";
+import funFacts from "../json/funFacts.json";
 import {
 	doc,
 	getDoc,
@@ -15,7 +16,7 @@ import { Layout } from "../components/Layout";
 import { useNavigate } from "react-router-dom"; // Make sure you're using React Router for navigation
 import { QRCodeGenerator } from "../components/QRCodeGenerator";
 import GreetingWithBlob from "../components/GreetingWithBlob";
-import { ref, get, child } from "firebase/database";
+import { ref, get, onValue } from "firebase/database";
 import Asthetic from "../components/Asthetic";
 import { Add } from "../components/Add";
 import Chat from "../components/Chat"; // Adjust the path based on your folder structure
@@ -23,6 +24,7 @@ import GroupChat from "../components/GroupChat"; // Adjust the path based on you
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import ReactPlayer from "react-player";
 import "react-photo-view/dist/react-photo-view.css";
+import { FaFire } from "react-icons/fa";
 
 interface Member {
 	username: string;
@@ -34,6 +36,7 @@ interface Server {
 	groupName: string;
 	groupPicUrl: string;
 	members: Member[]; // Store members here
+	lastMessage?: string;
 }
 
 interface FriendRequest {
@@ -44,15 +47,19 @@ interface FriendRequest {
 interface Friend {
 	username: string;
 	profilePicUrl?: string;
+	lastMessage?: string;
 }
 
 export const AppPage: FC = () => {
+	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
 	const [showToast, setShowToast] = useState(false);
 	const [showUserModal, setUserModal] = useState(false);
 	const [showFriendModal, setFriendModal] = useState(false);
 	const [userInfo, setUserInfo] = useState<DocumentData | null>(null);
 	const [isModalVisible, setIsModalVisible] = useState(false);
+	const [funFact, setFunFact] = useState("");
+
 	// Declare state for tracking active tab
 	const [activeTab, setActiveTab] = useState("profile"); // Default to 'profile' tab
 	const [currentDate, setCurrentDate] = useState("");
@@ -88,9 +95,49 @@ export const AppPage: FC = () => {
 	// Inside your component
 	const contextMenuRef = useRef<HTMLDivElement | null>(null);
 
+	// Function to randomly pick a fun fact
+    function didYouKnowRandomizer() {
+        const randomIndex = Math.floor(Math.random() * funFacts.length);
+        return funFacts[randomIndex];
+    }
+
 	const [activeFriend, setActiveFriend] = useState<string | null>(null);
 	const [activeGroup, setActiveGroup] = useState<string | null>(null);
 	const [activeMenuTab, setActiveMenuTab] = useState("Groups");
+	const [searchQuery, setSearchQuery] = useState("");
+	const [friendsList, setFriendsList] = useState<Friend[]>([]);
+	const [showCustomToast, setShowCustomToast] = useState(false);
+	const [toastContent, setToastContent] = useState({
+		title: "Welcome to BonFire!",
+		message: "Your chat experience just got better.",
+		button: "Learn More",
+	});
+
+	const closeCustomToast = () => {
+		setShowCustomToast(false);
+	};
+
+	const showCustomToastFunct = (
+		title: string,
+		message: string,
+		button: string,
+	) => {
+		setToastContent({ title, message, button });
+		setShowCustomToast(true);
+
+		// Automatically close the toast after 5 seconds
+		setTimeout(() => {
+			closeCustomToast();
+		}, 3000);
+	};
+
+	const filteredServers = serverList.filter((server) =>
+		server.groupName.toLowerCase().includes(searchQuery.toLowerCase()),
+	);
+
+	const filteredFriends = friendsList.filter((friend) =>
+		friend.username.toLowerCase().includes(searchQuery.toLowerCase()),
+	);
 
 	// Function to fetch the friend's profile picture from Firestore
 	async function getFriendProfilePic(
@@ -163,11 +210,64 @@ export const AppPage: FC = () => {
 								),
 							);
 
+							// Fetch last message for each group
+							const lastMessageRef = ref(
+								rtdb,
+								`groups/${serverId}/members/${currentUsername}/messages`,
+							);
+							const lastMessage = await new Promise<string>(
+								(resolve) => {
+									onValue(lastMessageRef, (snapshot) => {
+										const messages = snapshot.val();
+										if (messages) {
+											const messageKeys =
+												Object.keys(messages);
+											const lastMessageKey =
+												messageKeys[
+													messageKeys.length - 1
+												];
+											const lastMessageData =
+												messages[lastMessageKey];
+
+											let formattedMessage = "";
+
+											if (lastMessageData.gifUrl) {
+												formattedMessage = "Sent a GIF";
+											} else if (
+												lastMessageData.audioUrl
+											) {
+												formattedMessage =
+													"Sent an audio message";
+											} else if (
+												lastMessageData.content
+											) {
+												formattedMessage =
+													lastMessageData.content;
+											} else {
+												formattedMessage =
+													"Sent an attachment";
+											}
+
+											formattedMessage =
+												lastMessageData.sender ===
+												userInfo?.username
+													? `You: ${formattedMessage}`
+													: `${lastMessageData.sender}: ${formattedMessage}`;
+
+											resolve(formattedMessage);
+										} else {
+											resolve("");
+										}
+									});
+								},
+							);
+
 							return {
 								id: serverId,
 								groupName: serverData.groupName,
 								groupPicUrl: serverData.groupPicUrl,
 								members,
+								lastMessage,
 							};
 						},
 					),
@@ -244,8 +344,6 @@ export const AppPage: FC = () => {
 
 		setContextMenuPosition({ x: adjustedX, y: adjustedY });
 	};
-
-	const [friendsList, setFriendsList] = useState<Friend[]>([]);
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -266,29 +364,83 @@ export const AppPage: FC = () => {
 	useEffect(() => {
 		const fetchFriendsList = async () => {
 			try {
-				// Fetch the user document for the current user
 				const userDoc = await getDoc(
 					doc(db, "users", userInfo?.username),
 				);
 				if (userDoc.exists()) {
 					const data = userDoc.data();
-					const friends = data.friendList || []; // Ensure it's an array of usernames
+					const friends = data.friendList || []; // Array of usernames
 
-					// Fetch profile picture URLs for each friend
+					// Fetch profile picture URLs and last message for each friend
 					const friendsWithProfilePics = await Promise.all(
-						friends.map(async (username: string) => {
+						friends.map(async (friendUsername: string) => {
 							const friendDoc = await getDoc(
-								doc(db, "users", username),
+								doc(db, "users", friendUsername),
 							);
+							let profilePicUrl = "";
 							if (friendDoc.exists()) {
 								const friendData = friendDoc.data();
-								return {
-									username,
-									profilePicUrl:
-										friendData.profilePicUrl || "", // Check if profilePicUrl exists
-								};
+								profilePicUrl = friendData.profilePicUrl || "";
 							}
-							return { username, profilePicUrl: "" }; // Return only username if no profilePicUrl found
+
+							// Fetch last message for each friend
+							const lastMessageRef = ref(
+								rtdb,
+								`dm/${userInfo?.username}/${friendUsername}/messages`,
+							);
+
+							const lastMessage = await new Promise<string>(
+								(resolve) => {
+									onValue(lastMessageRef, (snapshot) => {
+										const messages = snapshot.val();
+										if (messages) {
+											const messageKeys =
+												Object.keys(messages);
+											const lastMessageKey =
+												messageKeys[
+													messageKeys.length - 1
+												];
+											const lastMessageData =
+												messages[lastMessageKey];
+
+											let formattedMessage = "";
+
+											if (lastMessageData.gifUrl) {
+												formattedMessage = "Sent a GIF";
+											} else if (
+												lastMessageData.audioUrl
+											) {
+												formattedMessage =
+													"Sent an audio message";
+											} else if (
+												lastMessageData.content
+											) {
+												formattedMessage =
+													lastMessageData.content;
+											} else {
+												formattedMessage =
+													"Sent an attachment";
+											}
+
+											formattedMessage =
+												lastMessageData.sender ===
+												userInfo?.username
+													? `You: ${formattedMessage}`
+													: `${friendUsername}: ${formattedMessage}`;
+
+											resolve(formattedMessage);
+										} else {
+											resolve("");
+										}
+									});
+								},
+							);
+
+							return {
+								username: friendUsername,
+								profilePicUrl,
+								lastMessage,
+							};
 						}),
 					);
 
@@ -579,11 +731,42 @@ export const AppPage: FC = () => {
 		}
 	}, []); // Runs once when the component mounts
 
+	useEffect(() => {
+		setFunFact(didYouKnowRandomizer());
+	}, []);
+
+	useEffect(() => {
+		// Show loading screen for 5 seconds
+		const timer = setTimeout(() => {
+			setIsLoading(false);
+		}, 5000);
+
+		// Clear the timer on unmount
+		return () => clearTimeout(timer);
+	}, []);
+
+	if (isLoading) {
+		return (
+			<Layout>
+				<div className="flex items-center justify-center h-screen fixed w-screen bg-neutral-900 text-white">
+					<div className="flex flex-col items-center space-y-4">
+						{/* Burning Fire Icon */}
+						<FaFire className="text-6xl text-red-500 animate-[flicker_1.5s_infinite_alternate]" />
+						<p className="text-xl font-bold">Did you know?</p>
+						<p className="text-gray-400 text-sm italic">
+							{funFact}
+						</p>
+					</div>
+				</div>
+			</Layout>
+		);
+	}
+
 	return (
 		<Layout>
 			{/* Modal Notification */}
 			{showModal && (
-				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50" data-theme="dark">
+				<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80 z-50">
 					<div className="modal-box bg-neutral-950 text-neutral-100 w-full max-w-lg p-6 rounded-lg shadow-lg space-y-4">
 						<h2 className="text-2xl font-semibold text-center">
 							Welcome to BonFire Version 1.0
@@ -632,7 +815,7 @@ export const AppPage: FC = () => {
 			/>
 
 			{showFriendModal && (
-				<div className="modal modal-open" data-theme="dark">
+				<div className="modal modal-open">
 					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
 						{/* Close Button */}
 						<button
@@ -776,7 +959,7 @@ export const AppPage: FC = () => {
 			)}
 
 			{showUserModal && (
-				<div className="modal modal-open" data-theme="dark">
+				<div className="modal modal-open">
 					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
 						{" "}
 						{/* Darker background */}
@@ -916,7 +1099,7 @@ export const AppPage: FC = () => {
 			)}
 			{/* Toast Notification */}
 			{showToast && (
-				<div className="toast toast-bottom toast-end z-40 font-helvetica" data-theme="dark">
+				<div className="toast toast-bottom toast-end z-40 font-helvetica">
 					<div className="alert bg-neutral-950 text-neutral-100 shadow-lg flex items-center space-x-4 rounded-lg p-4">
 						{/* Toast Content */}
 						<div className="flex flex-col">
@@ -947,9 +1130,42 @@ export const AppPage: FC = () => {
 					</div>
 				</div>
 			)}
+			{/* Toast Notification */}
+			{showCustomToast && (
+				<div className="toast toast-bottom toast-end z-40 font-helvetica">
+					<div className="alert bg-neutral-950 text-neutral-100 shadow-lg flex items-center space-x-4 rounded-lg p-4">
+						{/* Toast Content */}
+						<div className="flex flex-col">
+							<span className="text-lg font-medium">
+								{toastContent.title}
+							</span>
+							<p className="text-sm text-neutral-400">
+								{toastContent.message}
+							</p>
+						</div>
+
+						{/* Action Buttons */}
+						<div className="flex space-x-2">
+							<button
+								onClick={closeCustomToast}
+								className="btn btn-sm bg-neutral-800 hover:bg-neutral-900 text-neutral-300"
+								title="Close"
+							>
+								Close
+							</button>
+							<button
+								className="btn btn-sm bg-neutral-800 hover:bg-neutral-900 text-blue-400 font-semibold"
+								title="Learn More"
+							>
+								{toastContent.button}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* Main wrapper to hold both the sidebar and content */}
-			<div className="flex" data-theme="dark">
+			<div className="flex">
 				{/* Sidebar */}
 				<div className="fixed left-0 h-screen w-64 bg-neutral-950 text-white flex flex-col z-10 font-helvetica shadow-lg">
 					{/* Tab Switcher */}
@@ -974,6 +1190,14 @@ export const AppPage: FC = () => {
 								}`}
 							>
 								{tab}
+								{/* Show badge for friend requests */}
+								{tab === "Friends" &&
+									friendRequests.length > 0 && (
+										<span className="badge badge-md badge-secondary absolute top-3 rounded right-3 indicator-item ml-2">
+											{friendRequests.length}{" "}
+											{/* Display number of requests */}
+										</span>
+									)}
 							</button>
 						))}
 					</div>
@@ -984,6 +1208,8 @@ export const AppPage: FC = () => {
 						<input
 							type="text"
 							placeholder="Search..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
 							className="flex-grow bg-neutral-800 text-white text-sm rounded-lg outline-none placeholder-neutral-500 px-2 py-1"
 						/>
 
@@ -1099,44 +1325,70 @@ export const AppPage: FC = () => {
 					</div>
 
 					{/* Content Area */}
-					<div className="overflow-y-auto mt-4 px-2 space-y-3">
+					<div className="overflow-y-auto mt-4 px-2 space-y-3 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-neutral-950 scrollbar-track-rounded-md">
 						{activeMenuTab === "Groups" ? (
-							<div className="space-y-3">
-								{serverList.map((server) => (
-									<div
-										key={server.id}
-										className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
-										onClick={() => {
-											setActiveGroupChat({
-												groupName: server.groupName,
-												groupId: server.id,
-												groupPicUrl: server.groupPicUrl || "",
-												members: server.members.length ? server.members : [],
-												currentUsername: userInfo?.username,
-												currentUserPic: userInfo?.profilePicUrl,
-											});
-											setActiveChat(null); // Ensure this is executed after setting the active group chat
-										}}
-										
-									>
-										<img
-											src={
-												server.groupPicUrl ||
-												"https://ui-avatars.com/api/?name=default&background=random&size=512"
-											}
-											alt={server.groupName}
-											className="w-10 h-10 rounded-full object-cover"
-										/>
-										<span className="text-neutral-200 text-sm font-medium truncate">
-											{server.groupName}
-										</span>
+							<div className="space-y-3 ">
+								{(searchQuery ? filteredServers : serverList)
+									.length > 0 ? (
+									(searchQuery
+										? filteredServers
+										: serverList
+									).map((server) => (
+										<div
+											key={server.id}
+											className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
+											onClick={() => {
+												setActiveGroupChat({
+													groupName: server.groupName,
+													groupId: server.id,
+													groupPicUrl:
+														server.groupPicUrl ||
+														"",
+													members: server.members
+														.length
+														? server.members
+														: [],
+													currentUsername:
+														userInfo?.username,
+													currentUserPic:
+														userInfo?.profilePicUrl,
+												});
+												setActiveChat(null);
+											}}
+										>
+											<img
+												src={
+													server.groupPicUrl ||
+													"https://ui-avatars.com/api/?name=default&background=random&size=512"
+												}
+												alt={server.groupName}
+												className="w-10 h-10 rounded-full object-cover"
+											/>
+											<div className="flex flex-col">
+												<span className="text-neutral-200 text-sm font-medium truncate">
+													{server.groupName}
+												</span>
+												{/* Last Message */}
+												<span className="text-blue-600 text-sm truncate">
+													{server.lastMessage}
+												</span>
+											</div>
+										</div>
+									))
+								) : (
+									<div className="text-center text-neutral-500">
+										No servers found.
 									</div>
-								))}
+								)}
 							</div>
 						) : (
 							<div className="space-y-3">
-								{friendsList.length > 0 ? (
-									friendsList.map((friend) => (
+								{(searchQuery ? filteredFriends : friendsList)
+									.length > 0 ? (
+									(searchQuery
+										? filteredFriends
+										: friendsList
+									).map((friend) => (
 										<div
 											key={friend.username}
 											className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
@@ -1152,7 +1404,7 @@ export const AppPage: FC = () => {
 												});
 												closeContextMenu();
 												setActiveGroupChat(null);
-												setCurrentView(null); // Make sure to call the setter function to update state
+												setCurrentView(null);
 											}}
 										>
 											<img
@@ -1163,9 +1415,15 @@ export const AppPage: FC = () => {
 												alt={`${friend.username}'s profile`}
 												className="w-10 h-10 rounded-full object-cover"
 											/>
-											<span className="text-neutral-200 text-sm font-medium truncate">
-												{friend.username}
-											</span>
+											<div className="flex flex-col">
+												<span className="text-neutral-200 text-sm font-medium truncate">
+													{friend.username}
+												</span>
+												{/* Last Message */}
+												<span className="text-blue-600 text-sm truncate">
+													{friend.lastMessage}
+												</span>
+											</div>
 										</div>
 									))
 								) : (
@@ -1227,7 +1485,16 @@ export const AppPage: FC = () => {
 									</a>
 								</li>
 								<li>
-									<a className="hover:bg-blue-600">
+									<a
+										className="hover:bg-blue-600"
+										onClick={() =>
+											showCustomToastFunct(
+												"This Feature Is not implemented yet!",
+												"Might be available in newer versions",
+												"More Info",
+											)
+										}
+									>
 										Settings
 									</a>
 								</li>

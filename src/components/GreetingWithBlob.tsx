@@ -133,7 +133,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 				<img
 					src={LogoIcon} // Replace with the actual path to your logo
 					alt="BonFire Logo"
-					className="mb-4 w-64 h-64" // Adjust width and height as necessary
+					className="mb-4 w-64 h-64 pointer-events-none " // Adjust width and height as necessary
 				/>
 
 				<h2 className="text-4xl mb-4">Welcome to BonFire</h2>

@@ -5,6 +5,7 @@ import { FaMicrophone, FaStop } from "react-icons/fa";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 import ReactAudioPlayer from "react-audio-player";
+import { FixedSizeList as List } from "react-window";
 import ChatBg from "./ChatBg";
 import {
 	ref as storageRef,
@@ -1070,13 +1071,13 @@ const Chat: React.FC<ChatProps> = ({
 			)}
 
 			{showScrollToBottom && (
-				<div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+				<div className="fixed bottom-24 right-12 flex flex-col items-center">
 					<span
 						className="tooltip tooltip-top"
 						data-tip="Scroll to Bottom"
 					>
 						<button
-							className="p-2 rounded-full bg-blue-600 text-white shadow-lg hover:shadow-blue-500/50 transition-shadow"
+							className="p-2 rounded-md bg-neutral-800/70 backdrop-blur-lg text-white shadow-lg hover:shadow-blue-500/50 transition-shadow"
 							onClick={handleScrollToBottom}
 							aria-label="Scroll to Bottom"
 						>

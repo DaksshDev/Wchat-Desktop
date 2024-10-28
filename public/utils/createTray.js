@@ -21,19 +21,25 @@ exports.createTray = () => {
 					{
 						label: "GitHub",
 						click: () => {
-							shell.openExternal("https://github.com/DaksshDev/Wchat-Electron");
+							shell.openExternal(
+								"https://github.com/DaksshDev/Wchat-Electron",
+							);
 						},
 					},
 					{
 						label: "E-Mai",
 						click: () => {
-							shell.openExternal("mailto:Dakssh.bhambre@gmail.com");
+							shell.openExternal(
+								"mailto:Dakssh.bhambre@gmail.com",
+							);
 						},
 					},
 					{
 						label: "Website",
 						click: () => {
-							shell.openExternal("https://daksshdev.github.io/Wchat/");
+							shell.openExternal(
+								"https://daksshdev.github.io/Wchat/",
+							);
 						},
 					},
 				],
@@ -48,6 +54,10 @@ exports.createTray = () => {
 			},
 		]),
 	);
+	t.on("click", function (e) {
+		config.mainWindow.show();
+	});
 
 	return t;
 };
+

@@ -740,20 +740,33 @@ export const AppPage: FC = () => {
 		setFunFact(didYouKnowRandomizer());
 	}, []);
 
-	useEffect(() => {
-		// Show loading screen for 5 seconds
-		const timer = setTimeout(() => {
-			setIsLoading(false);
-		}, 5000);
+	const [fadeOut, setFadeOut] = useState(false); // Local state for fade-out
 
-		// Clear the timer on unmount
-		return () => clearTimeout(timer);
-	}, []);
+	// Effect to handle loading state and fade-out transition
+	useEffect(() => {
+		if (isLoading) {
+			const timer = setTimeout(() => {
+				setFadeOut(true); // Start fade-out transition after 5 seconds
+				setTimeout(() => {
+					setIsLoading(false); // Set loading to false after fade-out transition
+				}, 500); // Match this duration with the CSS transition duration
+			}, 5000);
+
+			// Clear the timer on unmount
+			return () => clearTimeout(timer);
+		} else {
+			setFadeOut(false); // Reset fade-out state when loading is set to false
+		}
+	}, [isLoading, setIsLoading]); // Add setIsLoading to dependencies
 
 	if (isLoading) {
 		return (
 			<Layout>
-				<div className="flex items-center justify-center h-screen fixed w-screen bg-neutral-950 text-white">
+				<div
+					className={`flex items-center justify-center h-screen fixed w-screen bg-neutral-950 text-white transition-opacity duration-500 ease-in-out ${
+						fadeOut ? "opacity-0" : "opacity-100"
+					}`}
+				>
 					<div className="flex flex-col items-center space-y-4">
 						{/* Burning Fire Icon */}
 						<FaFire className="text-6xl text-red-500 animate-[flicker_1.5s_infinite_alternate]" />

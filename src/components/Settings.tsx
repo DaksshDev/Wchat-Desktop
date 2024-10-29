@@ -30,6 +30,7 @@ export const Settings: React.FC<SettingsProps> = ({
 	const [appVersion, setAppVersion] = useState("");
 	const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
 	const [unsavedChanges, setUnsavedChanges] = useState(false);
+	const [fadeIn, setFadeIn] = useState(false); // Local state for fade-in
 
 	// Load the saved theme from local storage on component mount
 	useEffect(() => {
@@ -42,6 +43,15 @@ export const Settings: React.FC<SettingsProps> = ({
 		setSelectedTheme(theme);
 		setUnsavedChanges(true);
 	};
+
+	// Effect to trigger fade-in when modal becomes visible
+	useEffect(() => {
+		if (isModalVisible) {
+			setFadeIn(true); // Trigger fade-in animation
+		} else {
+			setFadeIn(false); // Reset fade-in state
+		}
+	}, [isModalVisible]);
 
 	// Save settings function
 	const saveSettings = () => {
@@ -73,8 +83,16 @@ export const Settings: React.FC<SettingsProps> = ({
 	if (!isModalVisible) return null;
 
 	return (
-		<div className="fixed inset-0 flex items-center justify-center bg-neutral-900 bg-opacity-90 z-40">
-			<div className="flex flex-col h-full w-full bg-neutral-950 text-neutral-200 p-8 overflow-y-auto">
+		<div
+			className={`fixed inset-0 flex items-center justify-center bg-neutral-900 bg-opacity-90 z-40 transition-opacity duration-700 ease-in-out ${
+				fadeIn ? "opacity-100" : "opacity-0 pointer-events-none"
+			}`}
+		>
+			<div
+				className={`flex flex-col h-full w-full bg-neutral-950 text-neutral-200 p-8 overflow-y-auto transition-transform duration-300 ease-in-out ${
+					fadeIn ? "translate-y-0" : "translate-y-2"
+				}`}
+			>
 				{/* Header */}
 				<div className="flex justify-between items-center mb-4">
 					<h1 className="text-3xl font-bold">App Settings</h1>

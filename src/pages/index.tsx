@@ -1,6 +1,7 @@
 import { FC, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db, storage } from "./FirebaseConfig";
+import React from "react";
 import {
 	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,

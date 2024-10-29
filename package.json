@@ -14,6 +14,7 @@
 	"version": "1.0.1",
 	"private": true,
 	"devDependencies": {
+		"@types/electron": "^1.4.38",
 		"@types/node": "^18.11.10",
 		"@types/qrcode": "^1.5.5",
 		"@types/react": "^18.0.26",

@@ -9,8 +9,12 @@ const remote = require("@electron/remote/main");
 const config = require("./utils/config");
 
 if (config.isDev) require("electron-reloader")(module);
-app.setAppUserModelId('BonFire');
-app.setAsDefaultProtocolClient('Bonfire');
+app.setAppUserModelId("BonFire");
+app.setAsDefaultProtocolClient("Bonfire");
+ipcMain.handle("get-current-window", (event) =>
+	BrowserWindow.fromWebContents(event.sender),
+);
+ipcMain.handle("quit-app", () => app.quit());
 
 remote.initialize();
 
@@ -22,12 +26,11 @@ if (!config.isDev) {
 	autoStart.enable();
 }
 
-
 app.on("ready", async () => {
 	config.mainWindow = await createMainWindow();
-	app.Icon
+	app.Icon;
 	config.tray = createTray();
-	nativeTheme.themeSource = 'dark'
+	nativeTheme.themeSource = "dark";
 
 	// Intercept external link clicks and prevent opening new windows
 	config.mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -68,9 +71,37 @@ app.on("ready", async () => {
 		}
 	});
 
-	config.notificationwindow = showNotification("BonFire is running in background", "See application tray for more information");
+	config.notificationwindow = showNotification(
+		"BonFire is running in background",
+		"See application tray for more information",
+	);
 });
 
+ // Handling minimize
+ ipcMain.on('minimize-window', () => {
+	config.mainWindow.minimize();
+});
+
+// Handling maximize
+ipcMain.on('maximize-window', () => {
+	if (config.mainWindow.isMaximized()) {
+		config.mainWindow.unmaximize();
+		config.mainWindow.webContents.send('window-unmaximized');
+	} else {
+		config.mainWindow.maximize();
+		config.mainWindow.webContents.send('window-maximized');
+	}
+});
+
+// Handling quit
+ipcMain.on('quit-app', () => {
+	app.quit();
+});
+
+// Check if window is maximized
+ipcMain.handle('is-window-maximized', () => {
+	return config.mainWindow.isMaximized();
+});
 
 app.on("window-all-closed", () => {
 	if (process.platform !== "darwin") app.quit();
@@ -86,11 +117,11 @@ ipcMain.on("app_version", (event) => {
 });
 
 autoUpdater.on("update-available", () => {
-	config.mainWindow.webContents.send("update_available");
+	console.log("update_available");
 });
 
 autoUpdater.on("update-downloaded", () => {
-	config.mainWindow.webContents.send("update_downloaded");
+	console.log("update_downloaded");
 });
 
 ipcMain.on("restart_app", () => {

@@ -1,4 +1,5 @@
 import { FC, useEffect, useState, useCallback, useRef } from "react";
+import React from "react";
 import { db, rtdb } from "./FirebaseConfig";
 import funFacts from "../json/funFacts.json";
 import {

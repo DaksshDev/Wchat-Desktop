@@ -2425,6 +2425,13 @@
   dependencies:
     "@types/ms" "*"
 
+"@types/electron@^1.4.38":
+  version "1.4.38"
+  resolved "https://registry.npmjs.org/@types/electron/-/electron-1.4.38.tgz"
+  integrity sha512-Cu6laqBamT6VSPi0LLlF9vE9Os8EbTaI/5eJSsd7CPoLUG3Znjh04u9TxMhQYPF1wGFM14Z8TFQ2914JZ+rGLg==
+  dependencies:
+    "@types/node" "*"
+
 "@types/eslint@^7.28.2":
   version "7.29.0"
   resolved "https://registry.npmjs.org/@types/eslint/-/eslint-7.29.0.tgz"

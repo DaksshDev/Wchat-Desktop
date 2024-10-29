@@ -1,7 +1,7 @@
 const { BrowserWindow } = require("electron");
 const { join } = require("path");
 const { autoUpdater } = require("electron-updater");
-const remote = require("@electron/remote/main");
+const remote = require("@electron/remote/main")
 const config = require("./config");
 
 exports.createMainWindow = async () => {
@@ -9,10 +9,11 @@ exports.createMainWindow = async () => {
 		width: 800,
 		height: 600,
 		webPreferences: {
-			nodeIntegration: true,
+			nodeIntegration: false,
 			enableRemoteModule: true,
 			devTools: config.isDev,
-			contextIsolation: false,
+			contextIsolation: true,
+			preload: join(__dirname, "..", "/preload.js"), // Specify the preload script
 			vibrancy: "ultra-dark"
 		},
 		frame: false,

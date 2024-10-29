@@ -36,6 +36,9 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
+		// Check localStorage for selected theme
+		const selectedTheme = localStorage.getItem("selectedTheme") || "Aurora";
+
 		// Set canvas size
 		const setCanvasSize = () => {
 			canvas.width = window.innerWidth;
@@ -44,19 +47,67 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 		setCanvasSize();
 		window.addEventListener("resize", setCanvasSize);
 
-		// Create 2 auroras with updated positions and amplitudes for better centering
-		const auroras = [
-			{
-				baseY: canvas.height * 0.4,
-				amplitude: canvas.height * 0.15,
-				color: "rgba(72, 209, 204, 0.3)", // Turquoise
-			},
-			{
-				baseY: canvas.height * 0.6,
-				amplitude: canvas.height * 0.2,
-				color: "rgba(147, 51, 234, 0.3)", // Purple
-			},
-		];
+		// Aurora colors based on theme
+		let auroras: { baseY: number; amplitude: number; color: string }[] = [];
+
+		switch (selectedTheme) {
+			case "Red Neon":
+				auroras = [
+					{
+						baseY: canvas.height * 0.4,
+						amplitude: canvas.height * 0.15,
+						color: "rgba(255, 0, 0, 0.3)", // Red Neon
+					},
+					{
+						baseY: canvas.height * 0.6,
+						amplitude: canvas.height * 0.2,
+						color: "rgba(255, 69, 0, 0.3)", // Orange
+					},
+				];
+				break;
+			case "Gamer Blue":
+				auroras = [
+					{
+						baseY: canvas.height * 0.4,
+						amplitude: canvas.height * 0.15,
+						color: "rgba(0, 50, 255, 0.3)", // Deep Blue
+					},
+					{
+						baseY: canvas.height * 0.6,
+						amplitude: canvas.height * 0.2,
+						color: "rgba(0, 255, 255, 0.3)", // Cyan
+					},
+				];
+				break;
+			case "Festival":
+				auroras = [
+					{
+						baseY: canvas.height * 0.4,
+						amplitude: canvas.height * 0.15,
+						color: "rgba(255, 0, 255, 0.3)", // Magenta
+					},
+					{
+						baseY: canvas.height * 0.6,
+						amplitude: canvas.height * 0.2,
+						color: "rgba(255, 215, 0, 0.3)", // Gold
+					},
+				];
+				break;
+			default:
+				auroras = [
+					{
+						baseY: canvas.height * 0.4,
+						amplitude: canvas.height * 0.15,
+						color: "rgba(72, 209, 204, 0.3)", // Turquoise (default Aurora)
+					},
+					{
+						baseY: canvas.height * 0.6,
+						amplitude: canvas.height * 0.2,
+						color: "rgba(147, 51, 234, 0.3)", // Purple
+					},
+				];
+				break;
+		}
 
 		let animationFrameId: number;
 		const animate = () => {
@@ -74,8 +125,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 				for (let x = 0; x < canvas.width; x++) {
 					const y =
 						aurora.baseY +
-						Math.sin((x / canvas.width) * 6 + time) *
-							aurora.amplitude;
+						Math.sin((x / canvas.width) * 6 + time) * aurora.amplitude;
 					ctx.lineTo(x, y);
 				}
 
@@ -89,7 +139,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 					0,
 					aurora.baseY - aurora.amplitude,
 					0,
-					aurora.baseY + aurora.amplitude,
+					aurora.baseY + aurora.amplitude
 				);
 				gradient.addColorStop(0, "transparent");
 				gradient.addColorStop(0.5, aurora.color);

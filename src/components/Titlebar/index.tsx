@@ -2,19 +2,6 @@ import { FC, useEffect, useState } from "react";
 import Logo from "./Logo.png";
 import { VscChromeRestore, VscClose, VscChromeMinimize, VscChromeMaximize } from "react-icons/vsc";
 
-declare global {
-    interface Window {
-        electronAPI?: {
-            getCurrentWindow: () => Promise<Electron.BrowserWindow | null>;
-            minimizeWindow: () => void;
-            maximizeWindow: () => void;
-            isMaximized: () => boolean;
-            quitApp: () => void;
-            onMaximize?: (callback: () => void) => void;
-            onUnmaximize?: (callback: () => void) => void;
-        };
-    }
-}
 
 export const Titlebar: FC = () => {
     const [maximized, setMaximized] = useState(false);

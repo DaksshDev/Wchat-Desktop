@@ -1,4 +1,3 @@
-// preload.js
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -8,4 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     isMaximized: () => ipcRenderer.invoke('is-window-maximized'),
     onMaximize: (callback) => ipcRenderer.on('window-maximized', callback),
     onUnmaximize: (callback) => ipcRenderer.on('window-unmaximized', callback),
+    getAppVersion: () => ipcRenderer.send('app_version'),
 });
+

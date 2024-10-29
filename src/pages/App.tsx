@@ -1,4 +1,4 @@
-import { FC, useEffect, useState, useCallback, useRef } from "react";
+import { FC, useEffect, useState, useRef } from "react";
 import React from "react";
 import { db, rtdb } from "./FirebaseConfig";
 import funFacts from "../json/funFacts.json";
@@ -20,6 +20,7 @@ import GreetingWithBlob from "../components/GreetingWithBlob";
 import { ref, get, onValue } from "firebase/database";
 import Asthetic from "../components/Asthetic";
 import { Add } from "../components/Add";
+import { Settings } from "../components/Settings";
 import Chat from "../components/Chat"; // Adjust the path based on your folder structure
 import GroupChat from "../components/GroupChat"; // Adjust the path based on your folder structure
 import { PhotoProvider, PhotoView } from "react-photo-view";
@@ -56,6 +57,7 @@ export const AppPage: FC = () => {
 	const [showModal, setShowModal] = useState(false);
 	const [showToast, setShowToast] = useState(false);
 	const [showUserModal, setUserModal] = useState(false);
+	const [showSettingsModal, setSettingsModal] = useState(false);
 	const [showFriendModal, setFriendModal] = useState(false);
 	const [userInfo, setUserInfo] = useState<DocumentData | null>(null);
 	const [isModalVisible, setIsModalVisible] = useState(false);
@@ -97,13 +99,12 @@ export const AppPage: FC = () => {
 	const contextMenuRef = useRef<HTMLDivElement | null>(null);
 
 	// Function to randomly pick a fun fact
-    function didYouKnowRandomizer() {
-        const randomIndex = Math.floor(Math.random() * funFacts.length);
-        return funFacts[randomIndex];
-    }
+	function didYouKnowRandomizer() {
+		const randomIndex = Math.floor(Math.random() * funFacts.length);
+		return funFacts[randomIndex];
+	}
 
 	const [activeFriend, setActiveFriend] = useState<string | null>(null);
-	const [activeGroup, setActiveGroup] = useState<string | null>(null);
 	const [activeMenuTab, setActiveMenuTab] = useState("Groups");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [friendsList, setFriendsList] = useState<Friend[]>([]);
@@ -593,6 +594,9 @@ export const AppPage: FC = () => {
 		setActiveChat(null);
 		setActiveMenuTab("friends");
 	};
+
+	// Function to toggle the modal
+	const toggleSettingsModal = () => setSettingsModal(!showSettingsModal);
 	const logout = () => {
 		localStorage.removeItem("username");
 		localStorage.removeItem("hasSeenWelcomeMessage");
@@ -749,7 +753,7 @@ export const AppPage: FC = () => {
 	if (isLoading) {
 		return (
 			<Layout>
-				<div className="flex items-center justify-center h-screen fixed w-screen bg-neutral-900 text-white">
+				<div className="flex items-center justify-center h-screen fixed w-screen bg-neutral-950 text-white">
 					<div className="flex flex-col items-center space-y-4">
 						{/* Burning Fire Icon */}
 						<FaFire className="text-6xl text-red-500 animate-[flicker_1.5s_infinite_alternate]" />
@@ -813,6 +817,13 @@ export const AppPage: FC = () => {
 				userId={userInfo?.userId}
 				currentUsername={userInfo?.username}
 				sentRequests={sentRequests} // Pass sent requests here
+			/>
+
+			{/* Pass modal visibility and toggle function as props */}
+			<Settings
+				isModalVisible={showSettingsModal}
+				toggleModal={toggleSettingsModal}
+				currentUsername={userInfo?.username}
 			/>
 
 			{showFriendModal && (
@@ -1488,13 +1499,7 @@ export const AppPage: FC = () => {
 								<li>
 									<a
 										className="hover:bg-blue-600"
-										onClick={() =>
-											showCustomToastFunct(
-												"This Feature Is not implemented yet!",
-												"Might be available in newer versions",
-												"More Info",
-											)
-										}
+										onClick={toggleSettingsModal}
 									>
 										Settings
 									</a>

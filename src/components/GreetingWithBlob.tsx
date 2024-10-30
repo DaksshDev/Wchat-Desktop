@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import LogoIcon from "./LogoIcon.png";
 import ICON from "../FlareAI/ICON.jpg";
+import { Gemini } from "../pages/FirebaseConfig";
 
 interface GreetingWithBlobProps {
 	currentUsername: string;
@@ -199,13 +200,23 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 			</p>
 
 			{/* FLARE AI BUTTON!  */}
-			<button className="rounded-full cursor-pointer absolute bottom-10 left-2 overflow-hidden w-16 h-16 transition-transform duration-300 transform hover:scale-110 shadow-md hover:shadow-xl">
-				<img
-					src={ICON} // Ensure ICON is correctly set to your image path
-					alt="Profile"
-					className="w-full h-full object-cover"
-				/>
-			</button>
+			<div className="absolute bottom-10 left-6 z-50">
+				<div
+					className="tooltip tooltip-top tooltip-info"
+					data-tip="FlareAI"
+				>
+					<button className="relative rounded-full cursor-pointer z-50 overflow-hidden w-16 h-16 transition-transform duration-300 transform hover:scale-125 flex items-center justify-center bg-gradient-to-r from-blue-500 to-green-500 border-4 border-blue-500 group">
+						<img
+							src={ICON} // Replace ICON with your JPG icon path
+							alt="Profile"
+							className="w-full h-full object-cover"
+						/>
+						{/* Shadow effect using borders */}
+						<span className="absolute inset-0 rounded-full border-4 border-blue-500 group-hover:border-orange-500 blur transition-all duration-300"></span>
+						<span className="absolute inset-0 rounded-full border-4 border-green-500 group-hover:border-yellow-500 blur transition-all duration-300 delay-200"></span>
+					</button>
+				</div>
+			</div>
 
 			{/* Getting Started section in the center */}
 			<div className="absolute z-10 text-center w-full h-full flex flex-col items-center justify-center text-white">

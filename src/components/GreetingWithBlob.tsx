@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import LogoIcon from "./LogoIcon.png";
+import ICON from "../FlareAI/ICON.jpg";
 
 interface GreetingWithBlobProps {
 	currentUsername: string;
@@ -13,6 +14,24 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 	currentTime,
 }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
+	// State to hold the greeting toggle value from localStorage
+	const [isGreetingEnabled, setIsGreetingEnabled] = useState<boolean>(false);
+
+	// Function to check and update the greeting status from localStorage
+	const checkGreetingStatus = () => {
+		const storedValue = localStorage.getItem("Greeting");
+		setIsGreetingEnabled(storedValue ? JSON.parse(storedValue) : false);
+	};
+
+	// Continuously watch for changes in the localStorage value
+	useEffect(() => {
+		checkGreetingStatus(); // Initial check on component mount
+
+		// Set up a polling interval to check for changes
+		const intervalId = setInterval(checkGreetingStatus, 1000);
+
+		return () => clearInterval(intervalId); // Clear the interval on component unmount
+	}, []);
 
 	const getGreeting = () => {
 		const hour = new Date().getHours();
@@ -125,7 +144,8 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 				for (let x = 0; x < canvas.width; x++) {
 					const y =
 						aurora.baseY +
-						Math.sin((x / canvas.width) * 6 + time) * aurora.amplitude;
+						Math.sin((x / canvas.width) * 6 + time) *
+							aurora.amplitude;
 					ctx.lineTo(x, y);
 				}
 
@@ -139,7 +159,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 					0,
 					aurora.baseY - aurora.amplitude,
 					0,
-					aurora.baseY + aurora.amplitude
+					aurora.baseY + aurora.amplitude,
 				);
 				gradient.addColorStop(0, "transparent");
 				gradient.addColorStop(0.5, aurora.color);
@@ -162,10 +182,11 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 
 	return (
 		<div className="relative w-[100%] h-screen right-0 bg-black overflow-hidden select-none rounded-lg">
-			{/* Greeting on bottom-left */}
-			<h1 className="absolute font-helvetica z-10 text-3xl text-white bottom-10 ml-9">
-				{getGreeting()}
-			</h1>
+			{isGreetingEnabled && (
+				<h1 className="absolute font-helvetica z-10 text-3xl text-white top-5 ml-9">
+					{getGreeting()}
+				</h1>
+			)}
 
 			{/* Date on bottom-right */}
 			<p className="absolute z-10 text-lg text-white bottom-10 right-1 mr-2">
@@ -176,6 +197,15 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 			<p className="absolute z-10 text-3xl text-white bottom-16 right-1 mr-2">
 				{currentTime}
 			</p>
+
+			{/* FLARE AI BUTTON!  */}
+			<button className="rounded-full cursor-pointer absolute bottom-10 left-2 overflow-hidden w-16 h-16 transition-transform duration-300 transform hover:scale-110 shadow-md hover:shadow-xl">
+				<img
+					src={ICON} // Ensure ICON is correctly set to your image path
+					alt="Profile"
+					className="w-full h-full object-cover"
+				/>
+			</button>
 
 			{/* Getting Started section in the center */}
 			<div className="absolute z-10 text-center w-full h-full flex flex-col items-center justify-center text-white">

@@ -517,8 +517,8 @@ const Chat: React.FC<ChatProps> = ({
 						const isExpanded = expandedMessages.includes(idx);
 						const contentToShow = isExpanded
 							? msg.content
-							: msg.content.length > 300
-							? msg.content.slice(0, 300) + "..."
+							: msg.content.length > 1300
+							? msg.content.slice(0, 1300) + "..."
 							: msg.content;
 
 						return (

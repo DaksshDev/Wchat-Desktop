@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DEFAULT from "../ThemePreviews/DEFAULT.png";
 import FESTIVAL from "../ThemePreviews/FESTIVAL.png";
 import GAMERBLUE from "../ThemePreviews/GAMERBLUE.png";
 import REDNEON from "../ThemePreviews/REDNEON.png";
+import { VscClose } from "react-icons/vsc";
 
 interface SettingsProps {
 	isModalVisible: boolean;
@@ -31,12 +32,59 @@ export const Settings: React.FC<SettingsProps> = ({
 	const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
 	const [unsavedChanges, setUnsavedChanges] = useState(false);
 	const [fadeIn, setFadeIn] = useState(false); // Local state for fade-in
+	const buttonRef = useRef<HTMLButtonElement>(null); // Create a ref for the button
+	const hasNotified = useRef(false); // Ref to track if notification has been sent
+	// Initialize the state based on localStorage or default to false
+	const [isGreetingEnabled, setIsGreetingEnabled] = useState<boolean>(() => {
+		const storedValue = localStorage.getItem("Greeting");
+		return storedValue ? JSON.parse(storedValue) : false;
+	});
+
+	// Retrieve the notification setting from localStorage, default to true if not present
+	const initialNotifySetting =
+		localStorage.getItem("isNotifyEnabled") === null
+			? true
+			: localStorage.getItem("isNotifyEnabled") === "true";
+
+	// State to track whether notifications are enabled
+	const [isNotifyEnabled, setIsNotifyEnabled] =
+		useState<boolean>(initialNotifySetting);
 
 	// Load the saved theme from local storage on component mount
 	useEffect(() => {
 		const savedTheme = localStorage.getItem("selectedTheme");
 		if (savedTheme) setSelectedTheme(savedTheme);
 	}, []);
+
+	useEffect(() => {
+		// Notify the renderer only if notifications are enabled and we haven't already notified
+		if (isNotifyEnabled && window.electronAPI && !hasNotified.current) {
+			window.electronAPI.notifyRenderer(); // Call the electron API to notify the renderer
+			hasNotified.current = true; // Mark that notification has been sent
+		}
+
+		// Save the notification setting to localStorage whenever it changes
+		localStorage.setItem(
+			"isNotifyEnabled",
+			JSON.stringify(isNotifyEnabled),
+		);
+	}, [isNotifyEnabled]);
+
+	// Function to handle the checkbox toggle
+	const handleNotificationToggle = (
+		event: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		setIsNotifyEnabled(event.target.checked);
+	};
+	// Update localStorage whenever isGreetingEnabled changes
+	useEffect(() => {
+		localStorage.setItem("Greeting", JSON.stringify(isGreetingEnabled));
+	}, [isGreetingEnabled]);
+
+	// Handle the toggle switch change
+	const handleToggle = () => {
+		setIsGreetingEnabled((prev) => !prev);
+	};
 
 	// Function to handle theme selection
 	const handleThemeChange = (theme: string) => {
@@ -67,6 +115,22 @@ export const Settings: React.FC<SettingsProps> = ({
 		setAppVersion(version);
 	}, []);
 
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && buttonRef.current) {
+				buttonRef.current.click(); // Simulate a click on the button
+			}
+		};
+
+		// Add event listener for keydown
+		window.addEventListener("keydown", handleKeyDown);
+
+		// Cleanup function to remove the event listener
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
+	}, []); // Empty dependency array means this effect runs once on mount
+
 	const closeToast = () => {
 		setShowToast(false);
 		setToastMessage("");
@@ -96,12 +160,19 @@ export const Settings: React.FC<SettingsProps> = ({
 				{/* Header */}
 				<div className="flex justify-between items-center mb-4">
 					<h1 className="text-3xl font-bold">App Settings</h1>
-					<button
-						onClick={toggleModal}
-						className="text-neutral-400 hover:text-neutral-100 text-2xl"
-					>
-						&times;
-					</button>
+					<div className="flex items-center">
+						<button
+							onClick={toggleModal}
+							ref={buttonRef} // Attach the ref to the button
+							title="Close"
+							className="text-neutral-400 hover:text-neutral-100 text-2xl border-2 border-white rounded-full flex items-center"
+						>
+							<VscClose size={20} />
+						</button>
+						<span className="ml-2 text-xl text-neutral-400">
+							ESC
+						</span>
+					</div>
 				</div>
 
 				{/* Tabs */}
@@ -148,21 +219,20 @@ export const Settings: React.FC<SettingsProps> = ({
 							{activeTab}
 						</h2>
 
-						{/* Display Theme Options */}
 						{activeTab === "Personalization" && (
-							<div className="flex flex-1">
+							<div className="flex flex-1 flex-col space-y-6">
+								{/* Backgrounds Section */}
 								<div className="flex-1 bg-neutral-800 rounded-lg p-6">
 									<h2 className="text-xl font-semibold mb-4 text-neutral-100">
 										Backgrounds
 									</h2>
 
-									{/* Display Theme Options in a Grid */}
-									<div className="grid grid-cols-8 gap-1">
-										{/* Reduced gap */}
+									{/* Display Theme Options in a Responsive Grid */}
+									<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 										{themes.map((theme) => (
 											<div
 												key={theme.name}
-												className={`relative flex flex-col items-center p-5 w-36 h-36 bg-neutral-900 rounded-lg hover:bg-neutral-950 transition-all cursor-pointer ${
+												className={`relative flex flex-col items-center p-5 bg-neutral-900 rounded-lg hover:bg-neutral-950 transition-all cursor-pointer ${
 													selectedTheme === theme.name
 														? "ring-2 ring-blue-600"
 														: ""
@@ -173,17 +243,15 @@ export const Settings: React.FC<SettingsProps> = ({
 													)
 												}
 											>
-												{/* Display badge for Festival theme */}
 												{theme.name === "Festival" && (
 													<span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
 														Diwali Special!
 													</span>
 												)}
-
 												<img
 													src={theme.icon}
 													alt={theme.name}
-													className="w-60 h-32 mb-2 rounded-lg object-cover" // Bigger icon size
+													className="w-60 h-32 mb-2 rounded-lg object-cover"
 												/>
 												<span className="text-sm text-neutral-100">
 													{theme.name}
@@ -206,6 +274,88 @@ export const Settings: React.FC<SettingsProps> = ({
 											</p>
 										</div>
 									)}
+								</div>
+
+								<div className="flex-1 bg-neutral-800 rounded-lg p-6">
+									<h2 className="text-xl font-semibold mb-4 text-neutral-100">
+										Preferences
+									</h2>
+									<div className="space-y-6">
+										{/* Show Greeting Option */}
+										<div className="flex items-center justify-between">
+											<label
+												htmlFor="showGreeting"
+												className="flex items-center text-neutral-100"
+											>
+												Show Greeting
+												<div
+													className="tooltip tooltip-right tooltip-info ml-1 cursor-pointer"
+													data-tip="Disable Good Afternoon, Morning and Night Greeting On Home Screen."
+												>
+													<span className="ml-1 text-gray-400">
+														ℹ️
+													</span>
+												</div>
+											</label>
+											<input
+												type="checkbox"
+												checked={isGreetingEnabled}
+												onChange={handleToggle}
+												id="showGreeting"
+												className="toggle toggle-primary"
+											/>
+										</div>
+
+										{/* Disable Flare AI Option */}
+										<div className="flex items-center justify-between">
+											<label
+												htmlFor="disableFlareAI"
+												className="flex items-center text-neutral-100"
+											>
+												Disable Flare AI
+												<div
+													className="tooltip tooltip-right tooltip-info ml-1 cursor-pointer"
+													data-tip="Please Don't Disable me!🥹"
+												>
+													<span className="ml-1 text-gray-400">
+														ℹ️
+													</span>
+												</div>
+											</label>
+											<input
+												type="checkbox"
+												id="disableFlareAI"
+												className="toggle toggle-error"
+											/>
+										</div>
+
+										{/* Disable Feature Notification Option */}
+										<div className="flex items-center justify-between">
+											<label
+												htmlFor="disableFeatureNotification"
+												className="flex items-center text-neutral-100"
+											>
+												Enable Feature Notification
+												<div
+													className="tooltip tooltip-right ml-1 tooltip-info cursor-pointer"
+													data-tip="Enable Those Notification You Get About New Features Like Diwali Background"
+												>
+													<span className="ml-1 text-gray-400">
+														ℹ️
+													</span>
+												</div>
+											</label>
+											<input
+												type="checkbox"
+												id="disableFeatureNotification"
+												checked={isNotifyEnabled}
+												onChange={
+													handleNotificationToggle
+												}
+												className="toggle toggle-primary"
+											/>
+										</div>
+									</div>
 								</div>
 							</div>
 						)}

@@ -77,30 +77,37 @@ app.on("ready", async () => {
 	);
 });
 
- // Handling minimize
- ipcMain.on('minimize-window', () => {
+// Handling minimize
+ipcMain.on("minimize-window", () => {
 	config.mainWindow.minimize();
 });
 
 // Handling maximize
-ipcMain.on('maximize-window', () => {
+ipcMain.on("maximize-window", () => {
 	if (config.mainWindow.isMaximized()) {
 		config.mainWindow.unmaximize();
-		config.mainWindow.webContents.send('window-unmaximized');
+		config.mainWindow.webContents.send("window-unmaximized");
 	} else {
 		config.mainWindow.maximize();
-		config.mainWindow.webContents.send('window-maximized');
+		config.mainWindow.webContents.send("window-maximized");
 	}
 });
 
 // Handling quit
-ipcMain.on('quit-app', () => {
+ipcMain.on("quit-app", () => {
 	app.quit();
 });
 
 // Check if window is maximized
-ipcMain.handle('is-window-maximized', () => {
+ipcMain.handle("is-window-maximized", () => {
 	return config.mainWindow.isMaximized();
+});
+
+ipcMain.on("renderer-notify", () => {
+	showNotification(
+		"New Diwali Background is available! 🎉✨🪔",
+		"Check out the new Diwali Special Festival Background! 🌼🥳🎊",
+	);
 });
 
 app.on("window-all-closed", () => {

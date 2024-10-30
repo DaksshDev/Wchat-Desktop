@@ -118,6 +118,7 @@ export const AppPage: FC = () => {
 	const closeCustomToast = () => {
 		setShowCustomToast(false);
 	};
+	
 
 	const showCustomToastFunct = (
 		title: string,
@@ -591,8 +592,6 @@ export const AppPage: FC = () => {
 	// Function to toggle modal visibility
 	const toggleModal = () => {
 		setIsModalVisible((prev) => !prev);
-		setActiveChat(null);
-		setActiveMenuTab("friends");
 	};
 
 	// Function to toggle the modal
@@ -1350,7 +1349,7 @@ export const AppPage: FC = () => {
 					</div>
 
 					{/* Content Area */}
-					<div className="overflow-y-auto mt-4 px-2 space-y-3 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-neutral-950 scrollbar-track-rounded-md">
+					<div className="overflow-y-auto mt-4 px-2 overflow-x-hidden space-y-3 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-neutral-950 scrollbar-track-rounded-md">
 						{activeMenuTab === "Groups" ? (
 							<div className="space-y-3 ">
 								{(searchQuery ? filteredServers : serverList)
@@ -1361,7 +1360,7 @@ export const AppPage: FC = () => {
 									).map((server) => (
 										<div
 											key={server.id}
-											className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
+											className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105"
 											onClick={() => {
 												setActiveGroupChat({
 													groupName: server.groupName,
@@ -1416,7 +1415,7 @@ export const AppPage: FC = () => {
 									).map((friend) => (
 										<div
 											key={friend.username}
-											className="flex items-center space-x-2 bg-neutral-900 p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
+											className="flex items-center space-x-2 bg-neutral-900 overflow-hidden p-3 rounded-lg cursor-pointer transition-transform hover:scale-105"
 											onContextMenu={(e) =>
 												openContextMenu(
 													friend.username,

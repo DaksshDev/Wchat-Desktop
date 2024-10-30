@@ -97,6 +97,7 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	const [isGifCopied, setIsGifCopied] = useState(false);
 	const [isAudioCopied, setIsAudioCopied] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
+
 	const [mediaRecorderInstance, setMediaRecorderInstance] =
 		useState<MediaRecorder | null>(null);
 
@@ -107,6 +108,12 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	const [isTyping, setIsTyping] = useState(false); // Whether the current user is typing
 	const [typingDots, setTypingDots] = useState("."); // Animated typing dots
 	const [typingMembers, setTypingMembers] = useState<string[]>([]);
+	{
+		/* Filter out the current username from the typingMembers array */
+	}
+	const filteredTypingMembers = typingMembers.filter(
+		(member) => member !== currentUsername,
+	);
 
 	// Function to get the admin usernames from the RTDB
 	const getAdmins = async (groupId: string): Promise<string[]> => {
@@ -1132,8 +1139,8 @@ const GroupChat: React.FC<GroupChatProps> = ({
 							? "bg-blue-600 text-white"
 							: "bg-gray-700 text-white";
 						const alignment = isCurrentUser
-							? "justify-end"
-							: "justify-start";
+							? "justify-end" // Aligns your messages to the right with a max width and slight padding on the right
+							: "justify-start"; // Aligns other user's messages to the left with slight padding on the left
 
 						// Find the sender's info from the members list
 						const senderInfo = members.find(
@@ -1155,8 +1162,8 @@ const GroupChat: React.FC<GroupChatProps> = ({
 						const isExpanded = expandedMessages.includes(idx);
 						const contentToShow = isExpanded
 							? msg.content
-							: msg.content.length > 300
-							? msg.content.slice(0, 300) + "..."
+							: msg.content.length > 1300
+							? msg.content.slice(0, 1300) + "..."
 							: msg.content;
 
 						return (
@@ -1374,19 +1381,27 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			)}
 
 			{/* Display the "Members are typing..." indicator */}
+			{/* Display the "Members are typing..." indicator */}
 			{typingMembers.length > 0 && (
 				<div className="p-2 text-gray-500 italic rounded-t-lg">
-					{typingMembers.length === 1 ? (
+					{filteredTypingMembers.length === 1 ? (
 						<>
-							<strong>{typingMembers[0]}</strong> is typing
+							<strong>{filteredTypingMembers[0]}</strong> is
+							typing
 							{typingDots}
 						</>
 					) : (
 						<>
-							<strong>
-								{typingMembers.slice(0, 2).join(", ")}
-							</strong>{" "}
-							are typing{typingDots}
+							{filteredTypingMembers.length > 0 && (
+								<>
+									<strong>
+										{filteredTypingMembers
+											.slice(0, 2)
+											.join(", ")}
+									</strong>{" "}
+									are typing{typingDots}
+								</>
+							)}
 						</>
 					)}
 				</div>

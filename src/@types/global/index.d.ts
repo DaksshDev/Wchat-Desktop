@@ -17,6 +17,7 @@ declare global {
             onMaximize: (callback: () => void) => void;
             onUnmaximize: (callback: () => void) => void;
             getAppVersion: () => string | undefined; // Allow undefined return here
+            notifyRenderer: () => void; // New function to notify TSX loaded
         };
     }
 }

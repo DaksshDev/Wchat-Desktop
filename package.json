@@ -37,6 +37,7 @@
 		"wait-on": "^6.0.1"
 	},
 	"dependencies": {
+		"@custom-react-hooks/use-idle": "^1.5.1",
 		"@electron/remote": "^2.0.8",
 		"@fortawesome/free-regular-svg-icons": "^6.6.0",
 		"@fortawesome/free-solid-svg-icons": "^6.6.0",
@@ -71,6 +72,7 @@
 		"react-player": "^2.16.0",
 		"react-router-dom": "^6.4.4",
 		"react-use": "^17.5.1",
+		"react-use-is-online": "^1.2.2",
 		"react-window": "^1.8.10",
 		"tailwind-merge": "^2.5.2",
 		"uuid": "^10.0.0"

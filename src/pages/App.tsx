@@ -5,6 +5,7 @@ import funFacts from "../json/funFacts.json";
 import {
 	doc,
 	getDoc,
+	setDoc,
 	getDocs,
 	collection,
 	DocumentData,
@@ -17,6 +18,7 @@ import { Layout } from "../components/Layout";
 import { useNavigate } from "react-router-dom"; // Make sure you're using React Router for navigation
 import { QRCodeGenerator } from "../components/QRCodeGenerator";
 import GreetingWithBlob from "../components/GreetingWithBlob";
+import { useIdle } from "@custom-react-hooks/use-idle";
 import { ref, get, onValue } from "firebase/database";
 import Asthetic from "../components/Asthetic";
 import { Add } from "../components/Add";
@@ -27,6 +29,8 @@ import { PhotoProvider, PhotoView } from "react-photo-view";
 import ReactPlayer from "react-player";
 import "react-photo-view/dist/react-photo-view.css";
 import { FaFire } from "react-icons/fa";
+
+type UserStatus = "online" | "offline" | "idle";
 
 interface Member {
 	username: string;
@@ -118,7 +122,45 @@ export const AppPage: FC = () => {
 	const closeCustomToast = () => {
 		setShowCustomToast(false);
 	};
-	
+
+	const [status, setStatus] = useState<UserStatus>("offline");
+	const isIdle = useIdle(60000); // User is idle if inactive for 1 minute
+
+	// Firestore reference to user document
+	const userDocRef = doc(db, `users/${currentUsername}`);
+
+	const updateStatus = async (newStatus: UserStatus) => {
+		setStatus(newStatus);
+		await setDoc(userDocRef, { status: newStatus }, { merge: true });
+	};
+
+	// Detect online/offline status
+	useEffect(() => {
+		const handleOnline = () => updateStatus("online");
+		const handleOffline = () => updateStatus("offline");
+		const handleWindowClose = () => updateStatus("offline");
+
+		// Set initial status based on navigator status
+		navigator.onLine ? handleOnline() : handleOffline();
+
+		// Listen for changes in network status
+		window.addEventListener("online", handleOnline);
+		window.addEventListener("offline", handleOffline);
+		window.addEventListener("beforeunload", handleWindowClose);
+
+		return () => {
+			window.removeEventListener("online", handleOnline);
+			window.removeEventListener("offline", handleOffline);
+			window.removeEventListener("beforeunload", handleWindowClose);
+		};
+	}, []);
+
+	// Update status based on idle detection
+	useEffect(() => {
+		if (navigator.onLine) {
+			updateStatus(isIdle ? "idle" : "online");
+		}
+	}, [isIdle]);
 
 	const showCustomToastFunct = (
 		title: string,
@@ -712,8 +754,14 @@ export const AppPage: FC = () => {
 	}, []);
 
 	useEffect(() => {
-		fetchUserInfo(); // Fetch user info
+		const timer = setTimeout(() => {
+			fetchUserInfo(); // Fetch user info after a 2-second delay
+		}, 2000);
+
+		// Clear the timer if the component unmounts or `showUserModal` changes
+		return () => clearTimeout(timer);
 	}, [showUserModal]);
+
 	const closeUserModal = () => {
 		setUserModal(false); // Close the modal
 	};
@@ -1085,10 +1133,12 @@ export const AppPage: FC = () => {
 									<div className="bg-zinc-950 text-white p-6 rounded-lg shadow-md space-y-4">
 										<p>
 											<strong>Creation Date:</strong>{" "}
-											{new Date(
-												userInfo.creationDate.seconds *
-													1000,
-											).toLocaleDateString()}
+											{userInfo.creationDate
+												? new Date(
+														userInfo.creationDate
+															.seconds * 1000,
+												  ).toLocaleDateString()
+												: "N/A"}
 										</p>
 										<p>
 											<strong>User ID:</strong>{" "}
@@ -1544,6 +1594,17 @@ export const AppPage: FC = () => {
 							</span>
 							<span className="text-neutral-500 text-sm">
 								{userInfo?.gender || "Gender"}
+							</span>
+							<span
+								className={`${
+									userInfo?.onlineStatus === "online"
+										? "text-green-500"
+										: userInfo?.onlineStatus === "idle"
+										? "text-yellow-500"
+										: "text-neutral-500"
+								} text-sm`}
+							>
+								{userInfo?.onlineStatus || "N/A"}
 							</span>
 						</div>
 					</div>

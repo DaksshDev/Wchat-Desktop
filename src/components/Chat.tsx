@@ -75,7 +75,7 @@ const Chat: React.FC<ChatProps> = ({
 		useState<MediaRecorder | null>(null);
 
 	const linkifyOptions = {
-		className: "text-blue-400 underline cursor-pointer",
+		className: "text-blue-300 underline cursor-pointer",
 		defaultProtocol: "https", // Ensures links without protocol still work
 	};
 
@@ -496,14 +496,17 @@ const Chat: React.FC<ChatProps> = ({
 			{/* Chat Messages */}
 			<div
 				ref={chatRef}
-				className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3 select-text scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-neutral-950 scrollbar-track-rounded-md"
+				className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-1 select-text scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-500 scrollbar-track-neutral-950 scrollbar-track-rounded-md"
 			>
 				{messages.length > 0 ? (
 					messages.map((msg, idx) => {
 						const isCurrentUser = msg.sender === currentUsername;
 						const bgColor = isCurrentUser
-							? "bg-blue-600 text-white"
-							: "bg-gray-700 text-white";
+							? "bg-violet-600 text-white"
+							: "bg-neutral-800 text-white";
+						const Rounded = isCurrentUser
+							? "rounded-t-lg rounded-bl-lg"
+							: "rounded-t-lg rounded-br-lg";
 						const alignment = isCurrentUser
 							? "justify-end"
 							: "justify-start";
@@ -553,7 +556,7 @@ const Chat: React.FC<ChatProps> = ({
 									)}
 
 									<div
-										className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg shadow-md ${bgColor} relative`}
+										className={`max-w-xs md:max-w-md lg:max-w-lg p-3 ${Rounded} shadow-md ${bgColor} relative`}
 										style={{ wordBreak: "break-word" }}
 									>
 										<p className="font-semibold">
@@ -598,7 +601,7 @@ const Chat: React.FC<ChatProps> = ({
 												<ReactPlayer
 													url={msg.content}
 													width="100%"
-													height="400px"
+													height="230px"
 													className="mt-2"
 													controls={true} // Show player controls
 												/>
@@ -609,6 +612,8 @@ const Chat: React.FC<ChatProps> = ({
 											<img
 												src={msg.gifUrl}
 												alt="GIF"
+												width="100%"
+												height="230px"
 												className="mt-2 rounded-lg"
 											/>
 										)}
@@ -686,7 +691,7 @@ const Chat: React.FC<ChatProps> = ({
 					})
 				) : (
 					<div className="flex justify-center items-start w-full mt-6">
-						<div className="bg-gray-800/70 p-6 rounded-lg text-center w-4/5 flex items-center">
+						<div className="bg-neutral-900/60 backdrop-blur-3xl p-6 rounded-lg text-center w-4/5 flex items-center">
 							{/* GIF on the left */}
 							<div className="w-1/3 flex justify-center items-center rounded-lg overflow-hidden">
 								<img
@@ -697,7 +702,7 @@ const Chat: React.FC<ChatProps> = ({
 							</div>
 
 							{/* Vertical separator */}
-							<hr className="w-px h-64 bg-gray-500 mx-6" />
+							<hr className="w-1 rounded-full h-64 bg-white mx-6" />
 
 							{/* Text and Button on the right */}
 							<div className="w-2/3 text-left">
@@ -727,7 +732,7 @@ const Chat: React.FC<ChatProps> = ({
 
 			{/* Display the "Uploading..." indicator */}
 			{isUploading && (
-				<div className="p-2 text-gray-500 italic rounded-t-lg">
+				<div className="p-2 text-gray-300 italic rounded-t-lg bg-neutral-950/60 backdrop-blur-2xl shadow-inner shadow-green-600">
 					<strong>Uploading...</strong>
 					{/* You can add a loading animation here if needed */}
 				</div>
@@ -735,14 +740,14 @@ const Chat: React.FC<ChatProps> = ({
 
 			{/* Display the "Friend is typing..." indicator */}
 			{isFriendTyping && (
-				<div className="p-2 text-gray-500 italic rounded-t-lg">
+				<div className="p-2 text-gray-300 italic rounded-t-lg bg-neutral-950/60 backdrop-blur-2xl shadow-inner shadow-blue-600">
 					<strong>{friendUsername}</strong> is typing{typingDots}
 				</div>
 			)}
 
 			{/* Reply Indicator */}
 			{replyingTo && (
-				<div className="p-2 bg-gray-800 text-white rounded-t-lg">
+				<div className="p-2 bg-neutral-900/60 backdrop-blur-2xl text-white rounded-t-lg">
 					Replying to <strong>{replyingTo.sender}</strong>
 					<button
 						onClick={() => setReplyingTo(null)}
@@ -754,7 +759,7 @@ const Chat: React.FC<ChatProps> = ({
 			)}
 
 			{/* Chat Input */}
-			<div className="p-3 bg-gray-900 shadow-md flex items-center relative">
+			<div className="p-3 bg-neutral-950/50 backdrop-blur-lg shadow-md flex items-center relative">
 				{/* Emoji Picker Toggle */}
 				<button
 					onClick={() => setShowEmojiPicker((prev) => !prev)}
@@ -781,7 +786,7 @@ const Chat: React.FC<ChatProps> = ({
 					maxLength={MAX_MESSAGE_LENGTH}
 					onChange={handleTyping} // Call handleTyping on every keystroke
 					onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-					className="flex-1 input input-bordered text-white bg-gray-800"
+					className="flex-1 input input-bordered text-white bg-neutral-900"
 				/>
 
 				<button
@@ -804,9 +809,9 @@ const Chat: React.FC<ChatProps> = ({
 				<button
 					onClick={() => handleSendMessage()}
 					title="Send"
-					className="btn btn-primary btn-sm ml-2"
+					className="btn bg-blue-600 hover:bg-neutral-800 btn-sm ml-2"
 				>
-					<FaPaperPlane size={18} />
+					<FaPaperPlane size={18} color="white"/>
 				</button>
 
 				{/* Emoji Picker Component */}

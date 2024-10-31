@@ -106,6 +106,7 @@ const GroupChat: React.FC<GroupChatProps> = ({
 		defaultProtocol: "https", // Ensures links without protocol still work
 	};
 	const [isTyping, setIsTyping] = useState(false); // Whether the current user is typing
+	const contextMenuRef = useRef<HTMLDivElement>(null);
 	const [typingDots, setTypingDots] = useState("."); // Animated typing dots
 	const [typingMembers, setTypingMembers] = useState<string[]>([]);
 	{
@@ -114,6 +115,22 @@ const GroupChat: React.FC<GroupChatProps> = ({
 	const filteredTypingMembers = typingMembers.filter(
 		(member) => member !== currentUsername,
 	);
+	const [recordingTime, setRecordingTime] = useState(0); // To track elapsed recording time
+
+	// Effect to handle timer when recording
+	useEffect(() => {
+		let interval: NodeJS.Timeout;
+
+		if (isRecording) {
+			interval = setInterval(() => {
+				setRecordingTime((prev) => prev + 1); // Increment every second
+			}, 1000);
+		} else {
+			setRecordingTime(0); // Reset recording time when not recording
+		}
+
+		return () => clearInterval(interval); // Clean up the interval on unmount or when recording state changes
+	}, [isRecording]);
 
 	// Function to get the admin usernames from the RTDB
 	const getAdmins = async (groupId: string): Promise<string[]> => {
@@ -534,6 +551,26 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			console.warn("Invalid timestamp: " + messageTimestamp);
 		}
 	};
+
+	// Close context menu on click outside
+	const handleClickOutside = (event: MouseEvent) => {
+		if (
+			contextMenuRef.current &&
+			!contextMenuRef.current.contains(event.target as Node)
+		) {
+			setShowContextMenu(null);
+			setSelectedMessage(null); // Reset selected message when clicking outside
+		}
+	};
+
+	useEffect(() => {
+		// Add event listener for clicks outside
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			// Clean up event listener on unmount
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, []);
 
 	// Handle emoji selection
 	const handleEmojiClick = (emojiData: EmojiClickData) => {
@@ -1201,7 +1238,11 @@ const GroupChat: React.FC<GroupChatProps> = ({
 									)}
 
 									<div
-										className={`max-w-xs md:max-w-md lg:max-w-lg p-3 ${Rounded} shadow-md ${bgColor} relative`}
+										className={`max-w-xs md:max-w-md lg:max-w-lg p-3 ${Rounded} shadow-md ${bgColor} relative ${
+											selectedMessage?.id === msg.id
+												? "border-yellow-500 border-2"
+												: ""
+										}`}
 										style={{ wordBreak: "break-word" }}
 									>
 										<p className="font-semibold">
@@ -1426,36 +1467,53 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			{/* Chat Input */}
 			<div className="p-3 bg-neutral-950/50 backdrop-blur-lg shadow-md flex items-center relative">
 				{/* Emoji Picker Toggle */}
-				<button
-					onClick={() => setShowEmojiPicker((prev) => !prev)}
-					className="btn btn-ghost btn-sm text-white mr-2"
-					title="Pick Emoji"
-				>
-					<FaSmile size={24} className="text-white" />
-				</button>
+				{!isRecording && (
+					<button
+						onClick={() => setShowEmojiPicker((prev) => !prev)}
+						className="btn btn-ghost btn-sm text-white mr-2"
+						title="Pick Emoji"
+					>
+						<FaSmile size={24} className="text-white" />
+					</button>
+				)}
 
 				{/* GIF Picker Toggle */}
-				<button
-					onClick={() => setShowGifPicker((prev) => !prev)}
-					className="btn btn-ghost btn-sm text-white mr-2"
-					title="Pick GIF"
-				>
-					<MdGif size={34} className="text-white" />
-				</button>
+				{!isRecording && (
+					<button
+						onClick={() => setShowGifPicker((prev) => !prev)}
+						className="btn btn-ghost btn-sm text-white mr-2"
+						title="Pick GIF"
+					>
+						<MdGif size={34} className="text-white" />
+					</button>
+				)}
+
+				{isRecording ? (
+					<div className="relative flex w-screen items-center mb-4 p-2 bg-neutral-950/60 backdrop-blur-3xl shadow-inner shadow-blue-600 rounded-lg">
+						<span className="text-white text-lg font-semibold mr-2">
+							Recording: {recordingTime}s
+						</span>
+						<span className="absolute w-4 h-4 rounded-full bg-red-500 animate-ping" />
+						<span className="text-red-500 ml-1">🔴</span>{" "}
+						{/* Optional red dot emoji for extra visual cue */}
+					</div>
+				) : null}
 
 				{/* Message Input */}
-				<input
-					type="text"
-					placeholder="Type your message..."
-					value={message}
-					maxLength={MAX_MESSAGE_LENGTH}
-					onChange={handleTyping} // Call handleTyping on every keystroke
-					onKeyDown={(e) =>
-						e.key === "Enter" &&
-						handleSendMessage(null, null, members)
-					}
-					className="flex-1 input input-bordered text-white bg-neutral-900"
-				/>
+				{!isRecording && (
+					<input
+						type="text"
+						placeholder="Type your message..."
+						value={message}
+						maxLength={MAX_MESSAGE_LENGTH}
+						onChange={handleTyping} // Call handleTyping on every keystroke
+						onKeyDown={(e) =>
+							e.key === "Enter" &&
+							handleSendMessage(null, null, members)
+						}
+						className="flex-1 input input-bordered text-white bg-neutral-900"
+					/>
+				)}
 
 				<button
 					onClick={handleRecordVoiceMessage}
@@ -1474,13 +1532,15 @@ const GroupChat: React.FC<GroupChatProps> = ({
 				</button>
 
 				{/* Send Button */}
-				<button
-					onClick={() => handleSendMessage(null, null, members)}
-					title="Send"
-					className="btn bg-blue-600 hover:bg-neutral-800 btn-sm ml-2"
-				>
-					<FaPaperPlane size={18} color="white" />
-				</button>
+				{!isRecording && (
+					<button
+						onClick={() => handleSendMessage(null, null, members)}
+						title="Send"
+						className="btn bg-blue-600 hover:bg-neutral-800 btn-sm ml-2"
+					>
+						<FaPaperPlane size={18} color="white" />
+					</button>
+				)}
 
 				{/* Emoji Picker Component */}
 				{showEmojiPicker && (
@@ -1512,12 +1572,16 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			{/* Context Menu */}
 			{showContextMenu && (
 				<div
-					className="absolute z-50 w-52 bg-gray-800 text-white shadow-lg p-2 rounded-lg"
+					className="absolute z-50 w-52 bg-neutral-900 text-white shadow-lg p-2 rounded-lg"
 					style={{
-						top: `${showContextMenu.y - 50}px`, // Add slight offset for better UX
-						left: `${showContextMenu.x - 70}px`,
+						top: `${showContextMenu.y - 30}px`, // Add slight offset for better UX
+						left: `${showContextMenu.x - 230}px`,
 					}}
-					onMouseLeave={() => setShowContextMenu(null)}
+					onMouseLeave={() => {
+						setShowContextMenu(null);
+						setSelectedMessage(null); // Reset selected message when mouse leaves context menu
+					}}
+					ref={contextMenuRef} // Assign ref to context menu
 				>
 					<ul>
 						{/* Reply Option */}
@@ -1744,7 +1808,7 @@ const GroupChat: React.FC<GroupChatProps> = ({
 			)}
 
 			{showScrollToBottom && (
-				<div className="fixed bottom-24 right-12 flex flex-col items-center">
+				<div className="fixed animate-bounce bottom-24 right-12 flex flex-col items-center">
 					<span
 						className="tooltip tooltip-top"
 						data-tip="Scroll to Bottom"

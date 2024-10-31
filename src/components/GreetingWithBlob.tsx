@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import LogoIcon from "./LogoIcon.png";
 import ICON from "../FlareAI/ICON.jpg";
 import { Gemini } from "../pages/FirebaseConfig";
+import { YouTubePlayer } from "./YoutubePlayer";
+import { FaYoutube } from "react-icons/fa"; // Import FaYoutube icon
 
 interface GreetingWithBlobProps {
 	currentUsername: string;
@@ -17,11 +19,18 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	// State to hold the greeting toggle value from localStorage
 	const [isGreetingEnabled, setIsGreetingEnabled] = useState<boolean>(false);
+	const [isYoutubePlayerShown, setYoutubePlayerShown] =
+		useState<boolean>(false);
 
 	// Function to check and update the greeting status from localStorage
 	const checkGreetingStatus = () => {
 		const storedValue = localStorage.getItem("Greeting");
 		setIsGreetingEnabled(storedValue ? JSON.parse(storedValue) : false);
+	};
+
+	// Function to Open Youtube Player
+	const openYoutube = () => {
+		setYoutubePlayerShown(true);
 	};
 
 	// Continuously watch for changes in the localStorage value
@@ -183,6 +192,16 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 
 	return (
 		<div className="relative w-[100%] h-screen right-0 bg-black overflow-hidden select-none rounded-lg">
+			{/* OUR YOUTUBE PLAYER! */}
+			{isYoutubePlayerShown && (
+				<div className="fixed w-screen h-screen z-50 right-0 overflow-hidden select-none rounded-lg">
+					<YouTubePlayer
+						initialUrl="https://www.youtube.com/watch?v=NkQxyW5mlZI&list=PLkZU2rKh1mT8cML-VNcUHF3vB8qzzgxuA&index=5"
+						onClose={() => setYoutubePlayerShown(false)}
+					/>
+				</div>
+			)}
+
 			{isGreetingEnabled && (
 				<h1 className="absolute font-helvetica z-10 text-3xl text-white top-5 ml-9">
 					{getGreeting()}
@@ -214,6 +233,25 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 						{/* Shadow effect using borders */}
 						<span className="absolute inset-0 rounded-full border-4 border-blue-500 group-hover:border-orange-500 blur transition-all duration-300"></span>
 						<span className="absolute inset-0 rounded-full border-4 border-green-500 group-hover:border-yellow-500 blur transition-all duration-300 delay-200"></span>
+					</button>
+				</div>
+			</div>
+
+			<div className="absolute top-3 right-3 z-50">
+				<div
+					className="tooltip tooltip-bottom tooltip-info"
+					data-tip="YouTube"
+				>
+					<button
+						className="relative flex items-center justify-center z-50 w-40 h-12 transition-transform duration-300 transform hover:scale-110 bg-gradient-to-r from-blue-500 to-green-500 border-4 border-blue-500 rounded-md"
+						onClick={openYoutube}
+					>
+						<FaYoutube size={24} className="text-white mr-2" />{" "}
+						{/* YouTube icon */}
+						<span className="text-white font-semibold">
+							YouTube Player
+						</span>{" "}
+						{/* Button text */}
 					</button>
 				</div>
 			</div>

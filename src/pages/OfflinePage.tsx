@@ -1,52 +1,75 @@
-import { useEffect, FC } from "react";
+import { useEffect, FC, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import Asthetic from "../components/Asthetic";
+import { FaFire, FaServer, FaGamepad, FaSyncAlt } from "react-icons/fa";
+import offlineFacts from "../json/offlineFacts.json";
+
+// Function to randomly pick a fun fact
+function didYouKnowRandomizer() {
+	const randomIndex = Math.floor(Math.random() * offlineFacts.length);
+	return offlineFacts[randomIndex];
+}
 
 export const OfflinePage: FC = () => {
-    const navigate = useNavigate();
+	const navigate = useNavigate();
+	const [funFact, setFunFact] = useState("");
 
-    useEffect(() => {
-        const handleOnline = () => {
-            if (navigator.onLine) {
-                navigate("/App"); // Redirect to app page when online
-            }
-        };
+	useEffect(() => {
+		const handleOnline = () => {
+			if (navigator.onLine) {
+				navigate("/App"); // Redirect to app page when online
+			}
+		};
 
-        // Listen for online event to redirect user
-        window.addEventListener("online", handleOnline);
+		// Listen for online event to redirect user
+		window.addEventListener("online", handleOnline);
 
-        return () => {
-            window.removeEventListener("online", handleOnline);
-        };
-    }, [navigate]);
+		return () => {
+			window.removeEventListener("online", handleOnline);
+		};
+	}, [navigate]);
 
-    return (
-        <Layout>
-            <div className="fixed w-screen flex flex-col items-center justify-center h-screen select-none overflow-hidden">
-                {/* Background aesthetic */}
-                <div className="absolute inset-0 z-[-1]">
-                    <Asthetic />
-                </div>
+	// Update fun fact every 15 seconds
+	useEffect(() => {
+		setFunFact(didYouKnowRandomizer());
+		const interval = setInterval(() => {
+			setFunFact(didYouKnowRandomizer());
+		}, 15000);
 
-                {/* Blurred container */}
-                <div className="bg-black bg-opacity-40 backdrop-blur-lg rounded-xl p-8 text-center">
-                    <h1 className="text-5xl font-bold text-white mb-4">
-                        Connection Lost
-                    </h1>
-                    <p className="text-lg text-gray-300 mb-8">
-                        Oops! Looks like our chat just ghosted you. 👻
-                    </p>
-                    
-                    {/* Spinner and message */}
-                    <div className="flex flex-col items-center">
-                        <div className="loader w-20 h-20 border-8 border-t-8 border-white border-t-black rounded-full animate-spin mb-4"></div>
-                        <p className="text-gray-300 text-center">
-                            Check your internet connection and try refreshing the page.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </Layout>
-    );
+		return () => clearInterval(interval);
+	}, []);
+
+	return (
+		<Layout>
+			<div className="flex items-center justify-center h-screen fixed w-screen bg-neutral-950 text-white">
+				<div className="flex flex-col items-center space-y-6 text-center">
+					{/* Burning Fire Icon */}
+					<FaFire className="text-6xl text-red-500 animate-[flicker_1.5s_infinite_alternate]" />
+					
+					{/* Fun Fact Section */}
+					<p className="text-xl font-bold">Did you know?</p>
+					<p className="text-gray-400 text-sm italic max-w-md">{funFact}</p>
+
+					{/* Offline Message */}
+					<p className="absolute bottom-20 text-base font-semibold">You Are Offline. I Guess</p>
+
+					{/* Links Section */}
+					<div className="absolute bottom-10 flex space-x-6 mt-2">
+						<button onClick={() => navigate("/server-status")} className="flex items-center text-blue-500 hover:underline transition">
+							<FaServer className="mr-1" />
+							Server Status
+						</button>
+						<button onClick={() => navigate("/play-game")} className="flex items-center text-blue-500 hover:underline transition">
+							<FaGamepad className="mr-1" />
+							Play a Game
+						</button>
+						<button onClick={() => window.location.reload()} className="flex items-center text-blue-500 hover:underline transition">
+							<FaSyncAlt className="mr-1" />
+							Reload
+						</button>
+					</div>
+				</div>
+			</div>
+		</Layout>
+	);
 };

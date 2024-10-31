@@ -2,6 +2,14 @@ import { FC, useEffect, useState, useRef } from "react";
 import React from "react";
 import { db, rtdb } from "./FirebaseConfig";
 import funFacts from "../json/funFacts.json";
+import { IoCheckmarkCircle, IoMoon, IoCloseCircle } from "react-icons/io5";
+import {
+	FaEllipsisH,
+	FaQrcode,
+	FaBan,
+	FaUserSlash,
+	FaTimes,
+} from "react-icons/fa";
 import {
 	doc,
 	getDoc,
@@ -28,7 +36,7 @@ import GroupChat from "../components/GroupChat"; // Adjust the path based on you
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import ReactPlayer from "react-player";
 import "react-photo-view/dist/react-photo-view.css";
-import { FaFire } from "react-icons/fa";
+import { FaFire, FaUserFriends } from "react-icons/fa";
 
 type UserStatus = "online" | "offline" | "idle";
 
@@ -54,6 +62,7 @@ interface Friend {
 	username: string;
 	profilePicUrl?: string;
 	lastMessage?: string;
+	onlineStatus?: string;
 }
 
 export const AppPage: FC = () => {
@@ -65,6 +74,7 @@ export const AppPage: FC = () => {
 	const [showFriendModal, setFriendModal] = useState(false);
 	const [userInfo, setUserInfo] = useState<DocumentData | null>(null);
 	const [isModalVisible, setIsModalVisible] = useState(false);
+	const [showQrModal, setShowQrModal] = useState(false);
 	const [funFact, setFunFact] = useState("");
 
 	// Declare state for tracking active tab
@@ -75,7 +85,7 @@ export const AppPage: FC = () => {
 	const [serverList, setServerList] = useState<Server[]>([]); // Explicitly type the state
 
 	const currentUsername = localStorage.getItem("username");
-	const welcomeusername: string = currentUsername ?? "UNDEFINED";
+	const welcomeusername: string = currentUsername ?? "Loading...";
 	const [friendUsername, setFriendUsername] = useState<string | null>(null);
 	const closeModal = () => setShowModal(false); // Function to close the modal
 	const closeToast = () => setShowToast(false); // Function to close the toast
@@ -503,6 +513,45 @@ export const AppPage: FC = () => {
 	}, [userInfo?.username]); // Dependency on username
 
 	useEffect(() => {
+		const fetchFriendsOnlineStatus = async () => {
+			try {
+				const friendsOnlineStatus = await Promise.all(
+					friendsList.map(async (friend) => {
+						const friendDoc = await getDoc(
+							doc(db, "users", friend.username),
+						);
+						let onlineStatus = "offline";
+						if (friendDoc.exists()) {
+							const friendData = friendDoc.data();
+							onlineStatus = friendData.onlineStatus || "offline";
+						}
+						return { username: friend.username, onlineStatus };
+					}),
+				);
+
+				// Update the state with online status of friends
+				setFriendsList((prevList) =>
+					prevList.map((friend) => ({
+						...friend,
+						onlineStatus:
+							friendsOnlineStatus.find(
+								(status) => status.username === friend.username,
+							)?.onlineStatus || "offline",
+					})),
+				);
+			} catch (error) {
+				console.error("Error fetching friends' online status:", error);
+			}
+		};
+
+		// Set up an interval to fetch the online status every 3 seconds
+		const interval = setInterval(fetchFriendsOnlineStatus, 3000);
+
+		// Cleanup interval on component unmount
+		return () => clearInterval(interval);
+	}, [friendsList]); // Dependency on friendsList to update online status
+
+	useEffect(() => {
 		const fetchFriendRequests = async () => {
 			try {
 				// Fetch the user document for the current user
@@ -754,12 +803,12 @@ export const AppPage: FC = () => {
 	}, []);
 
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			fetchUserInfo(); // Fetch user info after a 2-second delay
-		}, 2000);
+		const interval = setInterval(() => {
+			fetchUserInfo(); // Fetch user info every 3 seconds
+		}, 3000);
 
-		// Clear the timer if the component unmounts or `showUserModal` changes
-		return () => clearTimeout(timer);
+		// Clear the interval if the component unmounts
+		return () => clearInterval(interval);
 	}, [showUserModal]);
 
 	const closeUserModal = () => {
@@ -886,149 +935,149 @@ export const AppPage: FC = () => {
 				currentUsername={userInfo?.username}
 			/>
 
-			{showFriendModal && (
-				<div className="modal modal-open">
-					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
-						{/* Close Button */}
-						<button
-							className="absolute top-4 right-4 text-gray-300 hover:text-white text-lg"
-							onClick={closeFriendModal}
-						>
-							&times;
-						</button>
+{showFriendModal && (
+    <div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-start justify-center pt-8">
+        {/* Close and Options Buttons - Top Right Corner */}
+        <div className="absolute top-2 right-2 flex items-center space-x-1 z-50">
+            <button
+                title="Close"
+                className="text-neutral-400 hover:text-neutral-200 p-1 rounded-full transition"
+                onClick={() => closeFriendModal()}
+            >
+                <FaTimes size={20} />
+            </button>
+            <div className="dropdown dropdown-end">
+                <label
+                    tabIndex={0}
+                    title="Options"
+                    className="btn btn-circle bg-neutral-800/60 border-none btn-sm text-neutral-300 hover:bg-neutral-700/60"
+                >
+                    <FaEllipsisH size={20} />
+                </label>
+                <ul
+                    tabIndex={0}
+                    className="dropdown-content menu p-2 shadow-lg bg-neutral-950 border border-neutral-800 rounded-box w-52 text-neutral-300"
+                >
+                    <li>
+                        <button title="Show Qr Code" onClick={() => setShowQrModal(true)}>
+                            <FaQrcode /> Show Qr Code
+                        </button>
+                    </li>
+                    <li>
+                        <button title="Block Friend" className="text-red-600">
+                            <FaBan /> Block Friend
+                        </button>
+                    </li>
+                    <li>
+                        <button title="Remove Friend" className="text-red-600">
+                            <FaUserSlash /> Remove Friend
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
 
-						{/* Left-side Sidebar */}
-						<div className="bg-zinc-900 text-white p-6 flex flex-col space-y-6 w-1/4 h-full">
-							<div>
-								<h3 className="uppercase font-semibold text-sm mb-2 text-gray-400">
-									Friend Details
-								</h3>
+        {/* Friends Dropdown Button - Top Left Corner */}
+        <div className="absolute top-2 left-2">
+            <div className="dropdown dropdown-end dropdown-right">
+                <label
+                    tabIndex={0}
+                    className="btn btn-sm bg-neutral-800/60 border-none text-neutral-300 hover:bg-neutral-700/60 flex items-center space-x-1"
+                    title="Friends"
+                >
+                    <FaUserFriends size={16} />
+                </label>
+                <ul
+                    tabIndex={0}
+                    className="dropdown-content menu p-2 shadow-lg bg-neutral-950 border border-neutral-800 rounded-box w-32 text-neutral-300"
+                >
+                    <li>
+                        <span>Friends</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
 
-								<button
-									className={`w-full text-left p-3 ${
-										activeTab === "profile"
-											? "bg-blue-600 text-white rounded-lg"
-											: "bg-transparent hover:bg-gray-700"
-									}`}
-									onClick={() => setActiveTab("profile")}
-								>
-									Profile Info
-								</button>
+        {/* Modal Content */}
+        <div className="modal-box max-w-3xl w-5/6 h-[80vh] rounded-lg shadow-lg border border-neutral-800 bg-neutral-950 relative p-0 font-helvetica">
+            {/* Banner Section */}
+            <div className="relative h-36 w-full rounded-t-lg overflow-hidden bg-neutral-800">
+                <Asthetic />
+            </div>
 
-								<button
-									className={`w-full text-left p-3 ${
-										activeTab === "moreInfo"
-											? "bg-blue-600 text-white rounded-lg"
-											: "bg-transparent hover:bg-gray-700"
-									}`}
-									onClick={() => setActiveTab("moreInfo")}
-								>
-									More Info
-								</button>
-							</div>
-						</div>
+            <div className="absolute inset-x-0 top-20 flex justify-center z-50">
+                <div className="w-28 h-28 rounded-full ring-4 ring-neutral-800 overflow-hidden bg-neutral-950">
+                    <img
+                        src={friendInfo?.profilePicUrl}
+                        alt="Profile"
+                        className="object-cover w-full h-full"
+                    />
+                </div>
+            </div>
 
-						{/* Main Content Area */}
-						<div className="bg-zinc-950 text-white w-3/4 p-8 rounded-lg">
-							<h2 className="font-bold text-2xl mb-6">
-								Friend Information
-							</h2>
+            {/* Profile and Info Sections */}
+            <div className="p-8 pt-16 flex flex-col items-center space-y-2 text-center">
+                <h3 className="text-2xl font-semibold text-neutral-100">
+                    {friendInfo?.username}
+                </h3>
+                <p className="text-neutral-400 text-sm">
+                    {friendInfo?.pronouns}
+                </p>
+            </div>
 
-							{/* Profile Info Tab */}
-							{activeTab === "profile" && friendInfo && (
-								<div className="space-y-8 relative">
-									<div className="relative w-full h-32 bg-transparent rounded-lg border-white border-2 border-opacity-70 overflow-hidden shadow-lg flex">
-										<div className="absolute inset-0">
-											<Asthetic />
-											{/* Aesthetic background */}
-										</div>
-										<div className="z-10 flex w-full h-full items-center p-4 space-x-6">
-											{/* Profile Avatar with PhotoView */}
-											<PhotoProvider>
-												<PhotoView
-													src={
-														friendInfo?.profilePicUrl
-													}
-												>
-													<div className="flex justify-center cursor-pointer">
-														<div className="w-24 h-24 rounded-full ring ring-white ring-offset-1 overflow-hidden">
-															<img
-																src={
-																	friendInfo?.profilePicUrl
-																}
-																alt="Profile Picture"
-																className="object-cover h-full w-full"
-															/>
-														</div>
-													</div>
-												</PhotoView>
-											</PhotoProvider>
+            {/* Detailed Info */}
+            <div className="px-8 py-4 mt-4 space-y-3">
+                <div className="flex justify-between text-neutral-400">
+                    <span className="text-sm font-medium">Creation Date:</span>
+                    <span className="text-neutral-300">
+                        {new Date(friendInfo?.creationDate?.seconds * 1000).toLocaleDateString()}
+                    </span>
+                </div>
+                <div className="flex justify-between text-neutral-400">
+                    <span className="text-sm font-medium">User ID:</span>
+                    <span className="text-neutral-300">
+                        {friendInfo?.userId}
+                    </span>
+                </div>
+                <div className="bg-neutral-800 rounded-lg p-4 text-neutral-300">
+                    <div className="text-sm font-medium text-neutral-400 mb-2">Description:</div>
+                    <div className="text-sm">
+                        {friendInfo?.description}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-											<div className="flex flex-col justify-center text-white">
-												<h3 className="text-2xl font-semibold">
-													{friendInfo?.username}
-												</h3>
-												<p className="text-sm text-gray-300">
-													{friendInfo?.gender}
-												</p>
-												<p className="text-sm text-gray-400">
-													{friendInfo?.pronouns}
-												</p>
-											</div>
-										</div>
-									</div>
+        {/* Qr Code Modal */}
+        {showQrModal && (
+            <div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-center justify-center">
+                <div className="modal-box relative max-w-sm w-3/4 bg-neutral-950 p-8 rounded-lg shadow-lg border border-neutral-800 text-neutral-300">
+                    <button
+                        title="Close Qr Code"
+                        className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-100"
+                        onClick={() => setShowQrModal(false)}
+                    >
+                        <FaTimes size={20} />
+                    </button>
+                    <h3 className="text-lg font-semibold mb-4 text-center text-blue-600">
+                        Your Gamer Qr Code 🎮✨
+                    </h3>
+                    <div className="flex justify-center mt-4">
+                        <QRCodeGenerator userId={friendInfo?.userId} />
+                    </div>
+                    <p className="text-center text-neutral-400 mt-4">
+                        Scan to add{" "}
+                        <span className="text-neutral-100 font-semibold">
+                            {friendInfo?.username}
+                        </span>{" "}
+                        as a friend!
+                    </p>
+                </div>
+            </div>
+        )}
+    </div>
+)}
 
-									{/* Additional Info */}
-									<div className="bg-zinc-950 text-white p-6 rounded-lg shadow-md space-y-4">
-										<p>
-											<strong>Creation Date:</strong>{" "}
-											{new Date(
-												friendInfo.creationDate
-													.seconds * 1000,
-											).toLocaleDateString()}
-										</p>
-										<p>
-											<strong>User ID:</strong>{" "}
-											{friendInfo.userId}
-										</p>
-										<p>
-											<strong>Description:</strong>{" "}
-											{friendInfo.description}
-										</p>
-
-										<div className="flex space-x-7">
-											{/* Block Friend Button */}
-											<button className="bg-red-600 hover:bg-red-500 hover:from-red-700 hover:to-red-600 text-white py-2 px-4 rounded relative transition duration-300 ease-in-out transform hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(255,0,0,0.9)] hover:rotate-1 focus:outline-none focus:ring-4 focus:ring-red-500 focus:ring-opacity-50">
-												Block Friend
-											</button>
-
-											{/* Remove Friend Button */}
-											<button className="bg-red-700 hover:bg-red-600 hover:from-red-800 hover:to-red-700 text-white py-2 px-4 rounded relative transition duration-300 ease-in-out transform hover:scale-110 hover:shadow-[0_0_30px_10px_rgba(255,0,0,0.9)] hover:-rotate-1 focus:outline-none focus:ring-4 focus:ring-red-500 focus:ring-opacity-50">
-												Remove Friend
-											</button>
-										</div>
-									</div>
-								</div>
-							)}
-
-							{/* More Info Tab */}
-							{activeTab === "moreInfo" && (
-								<div className="py-4 relative border-white border-2 border-opacity-70 rounded-lg">
-									{/* QR Code Tab */}
-									<QRCodeGenerator
-										userId={friendInfo?.userId}
-									/>
-
-									{/* Asthetic Component */}
-									<div className="absolute inset-0 w-full h-full pointer-events-none z-[-1] ">
-										<Asthetic />
-									</div>
-								</div>
-							)}
-						</div>
-					</div>
-				</div>
-			)}
 
 			{showUserModal && (
 				<div className="modal modal-open">
@@ -1481,14 +1530,32 @@ export const AppPage: FC = () => {
 												setCurrentView(null);
 											}}
 										>
-											<img
-												src={
-													friend.profilePicUrl ||
-													"https://ui-avatars.com/api/?name=default&background=random&size=512"
-												}
-												alt={`${friend.username}'s profile`}
-												className="w-10 h-10 rounded-full object-cover"
-											/>
+											{/* Profile Picture */}
+											<div className="relative">
+												<img
+													src={
+														friend.profilePicUrl ||
+														"https://ui-avatars.com/api/?name=default&background=random&size=512"
+													}
+													alt={`${friend.username}'s profile`}
+													className="w-10 h-10 rounded-full object-cover"
+												/>
+
+												{/* Status Icon as Overlay */}
+												{friend.onlineStatus ===
+													"online" && (
+													<FaFire className="text-orange-500 absolute bottom-0 right-0 transform translate-x-1/2 -translate-y-1/2 p-0.5" />
+												)}
+												{friend.onlineStatus ===
+													"idle" && (
+													<IoMoon className="text-yellow-500 absolute bottom-0 right-0 transform translate-x-1/2 -translate-y-1/2 p-0.5" />
+												)}
+												{friend.onlineStatus ===
+													"offline" && (
+													<FaFire className="text-gray-500 absolute bottom-0 right-0 transform translate-x-1/2 -translate-y-1/2 p-0.5" />
+												)}
+											</div>
+											{/* Username and Last Message */}
 											<div className="flex flex-col">
 												<span className="text-neutral-200 text-sm font-medium truncate">
 													{friend.username}
@@ -1496,6 +1563,20 @@ export const AppPage: FC = () => {
 												{/* Last Message */}
 												<span className="text-blue-600 text-sm truncate">
 													{friend.lastMessage}
+												</span>
+												{/* Status Text with Color */}
+												<span
+													className={`${
+														friend.onlineStatus ===
+														"online"
+															? "text-green-500"
+															: friend.onlineStatus ===
+															  "idle"
+															? "text-yellow-500"
+															: "text-gray-500"
+													} text-sm truncate`}
+												>
+													{friend.onlineStatus}
 												</span>
 											</div>
 										</div>
@@ -1578,22 +1659,35 @@ export const AppPage: FC = () => {
 						</div>
 
 						{/* Profile Picture */}
-						<img
-							src={
-								userInfo?.profilePicUrl ||
-								"https://ui-avatars.com/api/?name=default&background=random&size=512"
-							}
-							alt="User profile"
-							className="w-10 h-10 rounded-full object-cover"
-						/>
+						<div className="relative">
+							<img
+								src={
+									userInfo?.profilePicUrl ||
+									"https://ui-avatars.com/api/?name=default&background=random&size=512"
+								}
+								alt="User profile"
+								className="w-10 h-10 rounded-full object-cover"
+							/>
+
+							{/* Status Icon */}
+							{userInfo?.onlineStatus === "online" && (
+								<IoCheckmarkCircle className="text-green-500 absolute bottom-0 right-0" />
+							)}
+							{userInfo?.onlineStatus === "idle" && (
+								<IoMoon className="text-yellow-500 absolute bottom-0 right-0" />
+							)}
+							{userInfo?.onlineStatus === "offline" && (
+								<IoCloseCircle className="text-neutral-500 absolute bottom-0 right-0" />
+							)}
+						</div>
 
 						{/* Username and Gender */}
-						<div className="flex flex-col">
+						<div className="flex flex-col ml-2">
 							<span className="text-neutral-200 font-medium truncate">
-								{userInfo?.username + "  (You)" || "Username"}
+								{userInfo?.username + "  (You)" || "loading..."}
 							</span>
 							<span className="text-neutral-500 text-sm">
-								{userInfo?.gender || "Gender"}
+								{userInfo?.gender || "loading..."}
 							</span>
 							<span
 								className={`${
@@ -1604,7 +1698,7 @@ export const AppPage: FC = () => {
 										: "text-neutral-500"
 								} text-sm`}
 							>
-								{userInfo?.onlineStatus || "N/A"}
+								{userInfo?.onlineStatus || "loading..."}
 							</span>
 						</div>
 					</div>

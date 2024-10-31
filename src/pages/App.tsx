@@ -36,7 +36,9 @@ import GroupChat from "../components/GroupChat"; // Adjust the path based on you
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import ReactPlayer from "react-player";
 import "react-photo-view/dist/react-photo-view.css";
-import { FaFire, FaUserFriends } from "react-icons/fa";
+import { FaFire, FaPencilAlt } from "react-icons/fa";
+import ProfileBanner from "../components/ProfileBanner";
+import EditProfile from "../components/EditProfile";
 
 type UserStatus = "online" | "offline" | "idle";
 
@@ -76,6 +78,7 @@ export const AppPage: FC = () => {
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const [showQrModal, setShowQrModal] = useState(false);
 	const [funFact, setFunFact] = useState("");
+	const [ProfileEdit, setProfileEdit] = useState(false);
 
 	// Declare state for tracking active tab
 	const [activeTab, setActiveTab] = useState("profile"); // Default to 'profile' tab
@@ -132,7 +135,13 @@ export const AppPage: FC = () => {
 	const closeCustomToast = () => {
 		setShowCustomToast(false);
 	};
+	const handleCloseModal = () => {
+		setProfileEdit(false);
+	};
 
+	const handleOpenModal = () => {
+		setProfileEdit(true);
+	};
 	const [status, setStatus] = useState<UserStatus>("offline");
 	const isIdle = useIdle(60000); // User is idle if inactive for 1 minute
 
@@ -803,12 +812,12 @@ export const AppPage: FC = () => {
 	}, []);
 
 	useEffect(() => {
-		const interval = setInterval(() => {
-			fetchUserInfo(); // Fetch user info every 3 seconds
-		}, 3000);
+		const timeout = setTimeout(() => {
+			fetchUserInfo(); // Fetch user info once, 2 seconds after mounting
+		}, 2000);
 
-		// Clear the interval if the component unmounts
-		return () => clearInterval(interval);
+		// Clear the timeout if the component unmounts before the delay completes
+		return () => clearTimeout(timeout);
 	}, [showUserModal]);
 
 	const closeUserModal = () => {
@@ -935,251 +944,261 @@ export const AppPage: FC = () => {
 				currentUsername={userInfo?.username}
 			/>
 
-{showFriendModal && (
-    <div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-start justify-center pt-8">
-        {/* Close and Options Buttons - Top Right Corner */}
-        <div className="absolute top-2 right-2 flex items-center space-x-1 z-50">
-            <button
-                title="Close"
-                className="text-neutral-400 hover:text-neutral-200 p-1 rounded-full transition"
-                onClick={() => closeFriendModal()}
-            >
-                <FaTimes size={20} />
-            </button>
-            <div className="dropdown dropdown-end">
-                <label
-                    tabIndex={0}
-                    title="Options"
-                    className="btn btn-circle bg-neutral-800/60 border-none btn-sm text-neutral-300 hover:bg-neutral-700/60"
-                >
-                    <FaEllipsisH size={20} />
-                </label>
-                <ul
-                    tabIndex={0}
-                    className="dropdown-content menu p-2 shadow-lg bg-neutral-950 border border-neutral-800 rounded-box w-52 text-neutral-300"
-                >
-                    <li>
-                        <button title="Show Qr Code" onClick={() => setShowQrModal(true)}>
-                            <FaQrcode /> Show Qr Code
-                        </button>
-                    </li>
-                    <li>
-                        <button title="Block Friend" className="text-red-600">
-                            <FaBan /> Block Friend
-                        </button>
-                    </li>
-                    <li>
-                        <button title="Remove Friend" className="text-red-600">
-                            <FaUserSlash /> Remove Friend
-                        </button>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        {/* Friends Dropdown Button - Top Left Corner */}
-        <div className="absolute top-2 left-2">
-            <div className="dropdown dropdown-end dropdown-right">
-                <label
-                    tabIndex={0}
-                    className="btn btn-sm bg-neutral-800/60 border-none text-neutral-300 hover:bg-neutral-700/60 flex items-center space-x-1"
-                    title="Friends"
-                >
-                    <FaUserFriends size={16} />
-                </label>
-                <ul
-                    tabIndex={0}
-                    className="dropdown-content menu p-2 shadow-lg bg-neutral-950 border border-neutral-800 rounded-box w-32 text-neutral-300"
-                >
-                    <li>
-                        <span>Friends</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        {/* Modal Content */}
-        <div className="modal-box max-w-3xl w-5/6 h-[80vh] rounded-lg shadow-lg border border-neutral-800 bg-neutral-950 relative p-0 font-helvetica">
-            {/* Banner Section */}
-            <div className="relative h-36 w-full rounded-t-lg overflow-hidden bg-neutral-800">
-                <Asthetic />
-            </div>
-
-            <div className="absolute inset-x-0 top-20 flex justify-center z-50">
-                <div className="w-28 h-28 rounded-full ring-4 ring-neutral-800 overflow-hidden bg-neutral-950">
-                    <img
-                        src={friendInfo?.profilePicUrl}
-                        alt="Profile"
-                        className="object-cover w-full h-full"
-                    />
-                </div>
-            </div>
-
-            {/* Profile and Info Sections */}
-            <div className="p-8 pt-16 flex flex-col items-center space-y-2 text-center">
-                <h3 className="text-2xl font-semibold text-neutral-100">
-                    {friendInfo?.username}
-                </h3>
-                <p className="text-neutral-400 text-sm">
-                    {friendInfo?.pronouns}
-                </p>
-            </div>
-
-            {/* Detailed Info */}
-            <div className="px-8 py-4 mt-4 space-y-3">
-                <div className="flex justify-between text-neutral-400">
-                    <span className="text-sm font-medium">Creation Date:</span>
-                    <span className="text-neutral-300">
-                        {new Date(friendInfo?.creationDate?.seconds * 1000).toLocaleDateString()}
-                    </span>
-                </div>
-                <div className="flex justify-between text-neutral-400">
-                    <span className="text-sm font-medium">User ID:</span>
-                    <span className="text-neutral-300">
-                        {friendInfo?.userId}
-                    </span>
-                </div>
-                <div className="bg-neutral-800 rounded-lg p-4 text-neutral-300">
-                    <div className="text-sm font-medium text-neutral-400 mb-2">Description:</div>
-                    <div className="text-sm">
-                        {friendInfo?.description}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {/* Qr Code Modal */}
-        {showQrModal && (
-            <div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-center justify-center">
-                <div className="modal-box relative max-w-sm w-3/4 bg-neutral-950 p-8 rounded-lg shadow-lg border border-neutral-800 text-neutral-300">
-                    <button
-                        title="Close Qr Code"
-                        className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-100"
-                        onClick={() => setShowQrModal(false)}
-                    >
-                        <FaTimes size={20} />
-                    </button>
-                    <h3 className="text-lg font-semibold mb-4 text-center text-blue-600">
-                        Your Gamer Qr Code 🎮✨
-                    </h3>
-                    <div className="flex justify-center mt-4">
-                        <QRCodeGenerator userId={friendInfo?.userId} />
-                    </div>
-                    <p className="text-center text-neutral-400 mt-4">
-                        Scan to add{" "}
-                        <span className="text-neutral-100 font-semibold">
-                            {friendInfo?.username}
-                        </span>{" "}
-                        as a friend!
-                    </p>
-                </div>
-            </div>
-        )}
-    </div>
-)}
-
-
-			{showUserModal && (
-				<div className="modal modal-open">
-					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
-						{" "}
-						{/* Darker background */}
-						{/* Close Button at Top-Right */}
+			{showFriendModal && (
+				<div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-start justify-center pt-8">
+					{/* Close and Options Buttons - Top Right Corner */}
+					<div className="absolute top-10 right-80 flex items-center space-x-1 z-50">
 						<button
-							className="absolute top-4 right-4 text-gray-300 hover:text-white text-lg"
-							onClick={closeUserModal}
+							title="Close"
+							className="text-neutral-400 hover:text-neutral-200 p-1 rounded-full transition"
+							onClick={() => closeFriendModal()}
 						>
-							&times; {/* Small 'x' */}
+							<FaTimes size={20} />
 						</button>
-						{/* Left-side Sidebar with Headings and Buttons */}
-						<div className="bg-zinc-900 text-white p-6 flex flex-col space-y-6 w-1/4 h-full">
-							{" "}
-							{/* Darker sidebar */}
-							{/* Profile Section Heading */}
-							<div>
-								<h3 className="uppercase font-semibold text-sm mb-2 text-gray-400">
-									Profile
-								</h3>
+						<div className="dropdown dropdown-end">
+							<label
+								tabIndex={0}
+								title="Options"
+								className="btn btn-circle bg-neutral-800/60 border-none btn-sm text-neutral-300 hover:bg-neutral-700/60"
+							>
+								<FaEllipsisH size={20} />
+							</label>
+							<ul
+								tabIndex={0}
+								className="dropdown-content menu p-2 shadow-lg bg-neutral-950 border border-neutral-800 rounded-box w-52 text-neutral-300"
+							>
+								<li>
+									<button
+										title="Show Qr Code"
+										onClick={() => setShowQrModal(true)}
+										className="rounded-lg hover:bg-blue-600 hover:text-sm"
+									>
+										<FaQrcode /> Show Qr Code
+									</button>
+								</li>
+								<li>
+									<button
+										title="Block Friend"
+										className="text-red-600 rounded-lg hover:bg-red-600 hover:text-white hover:text-base"
+									>
+										<FaBan /> Block Friend
+									</button>
+								</li>
+								<li>
+									<button
+										title="Remove Friend"
+										className="text-red-600 rounded-lg hover:bg-red-600 hover:text-white hover:text-base"
+									>
+										<FaUserSlash /> Remove Friend
+									</button>
+								</li>
+							</ul>
+						</div>
+					</div>
 
-								{/* Profile Info Button */}
-								<button
-									className={`w-full text-left p-3 ${
-										activeTab === "profile"
-											? "bg-blue-600 text-white rounded-lg"
-											: "bg-transparent hover:bg-gray-700"
-									}`}
-									onClick={() => setActiveTab("profile")}
-								>
-									Profile Info
-								</button>
+					{/* Modal Content */}
+					<div className="modal-box max-w-3xl w-5/6 h-[80vh] rounded-lg shadow-lg border border-neutral-800 bg-neutral-950 relative p-0 font-helvetica">
+						{/* Banner Section */}
+						<div className="relative h-36 w-full rounded-t-lg overflow-hidden bg-neutral-800">
+							<ProfileBanner
+								currentUsername={friendInfo?.username}
+							/>
+						</div>
 
-								{/* QR Code Button under Profile Heading */}
-								<button
-									className={`w-full text-left p-3 ${
-										activeTab === "qr"
-											? "bg-blue-600 text-white rounded-lg"
-											: "bg-transparent hover:bg-gray-700"
-									}`}
-									onClick={() => setActiveTab("qr")}
-								>
-									QR Code
-								</button>
+						<div className="absolute inset-x-0 top-20 flex justify-center z-50">
+							<div className="w-28 h-28 rounded-full ring-4 ring-neutral-800 overflow-hidden bg-neutral-950">
+								<img
+									src={friendInfo?.profilePicUrl}
+									alt="Profile"
+									className="object-cover w-full h-full"
+								/>
 							</div>
 						</div>
+
+						{/* Profile and Info Sections */}
+						<div className="p-8 pt-16 flex flex-col items-center space-y-2 text-center">
+							<h3 className="text-2xl font-semibold text-neutral-100">
+								{friendInfo?.username}
+							</h3>
+							<p className="text-neutral-400 text-sm">
+								{friendInfo?.pronouns}
+							</p>
+						</div>
+
+						{/* Detailed Info */}
+						<div className="px-8 py-4 mt-4 space-y-3">
+							<div className="flex justify-between text-neutral-400">
+								<span className="text-sm font-medium">
+									Creation Date:
+								</span>
+								<span className="text-neutral-300">
+									{new Date(
+										friendInfo?.creationDate?.seconds *
+											1000,
+									).toLocaleDateString()}
+								</span>
+							</div>
+							<div className="flex justify-between text-neutral-400">
+								<span className="text-sm font-medium">
+									Age:
+								</span>
+								<span className="text-neutral-300">
+									{friendInfo?.age}
+								</span>
+							</div>
+							<div className="bg-neutral-800 rounded-lg p-4 text-neutral-300">
+								<div className="text-sm font-medium text-neutral-400 mb-2">
+									Description:
+								</div>
+								<div className="text-sm">
+									{friendInfo?.description}
+								</div>
+							</div>
+						</div>
+					</div>
+
+					{/* Qr Code Modal */}
+					{showQrModal && (
+						<div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-center justify-center">
+							<div className="modal-box relative max-w-sm w-3/4 bg-neutral-950 p-8 rounded-lg shadow-lg border border-neutral-800 text-neutral-300">
+								<button
+									title="Close Qr Code"
+									className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-100"
+									onClick={() => setShowQrModal(false)}
+								>
+									<FaTimes size={20} />
+								</button>
+								<h3 className="text-lg font-semibold mb-4 text-center text-blue-600">
+									Gamer Qr Code 🎮✨
+								</h3>
+								<div className="flex justify-center mt-4">
+									<QRCodeGenerator
+										userId={friendInfo?.userId}
+									/>
+								</div>
+								<p className="text-center text-neutral-400 mt-4">
+									Scan to add{" "}
+									<span className="text-neutral-100 font-semibold">
+										{friendInfo?.username}
+									</span>{" "}
+									as a friend!
+								</p>
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+
+			{showUserModal && (
+				<div className="modal modal-open fixed inset-0 z-50 bg-neutral-900/70 backdrop-blur-lg flex items-start justify-center pt-8">
+					{/* Modal Content */}
+					<div className="modal-box flex flex-row p-0 fixed h-screen max-w-full bg-black shadow-lg font-helvetica">
+						{/* Close Button - Top Right Corner */}
+						<div className="absolute top-2 right-2 flex items-center space-x-1 z-50">
+							<button
+								title="Close"
+								className="text-neutral-400 hover:text-neutral-200 p-1 rounded-full transition"
+								onClick={closeUserModal}
+							>
+								<FaTimes size={20} />
+							</button>
+						</div>
+
+						{/* Left Sidebar with Tabs */}
+						<div className="bg-zinc-900 text-white p-6 flex flex-col space-y-6 w-1/4 h-full">
+							<h3 className="uppercase font-semibold text-sm mb-2 text-gray-400">
+								Profile
+							</h3>
+							<button
+								className={`w-full text-left p-3 ${
+									activeTab === "profile"
+										? "bg-blue-600 text-white rounded-lg"
+										: "bg-transparent hover:bg-gray-700 rounded-lg"
+								}`}
+								onClick={() => setActiveTab("profile")}
+							>
+								Profile Info
+							</button>
+							<button
+								className={`w-full text-left p-3 ${
+									activeTab === "qr"
+										? "bg-blue-600 text-white rounded-lg"
+										: "bg-transparent hover:bg-gray-700 rounded-lg"
+								}`}
+								onClick={() => setActiveTab("qr")}
+							>
+								QR Code
+							</button>
+						</div>
+
 						{/* Main Content Area */}
 						<div className="bg-zinc-950 text-white w-3/4 p-8">
-							<h2 className="font-bold text-2xl mb-6 font-helvetica">
-								User Information
-							</h2>
-
-							{/* Conditional Rendering Based on Active Tab */}
+							{/* Profile Info Tab */}
 							{activeTab === "profile" && userInfo ? (
-								<div className="space-y-8 relative font-helvetica">
-									{/* Profile Card with Asthetic Background */}
-									<div className="relative w-full h-32 bg-transparent rounded-lg border-white border-2 border-opacity-70 overflow-hidden shadow-lg flex">
-										{/* Asthetic Background */}
+								<div className="space-y-8 relative">
+									{/* Banner Area with Edit Button */}
+									<div className="relative w-full h-40  rounded-t-lg overflow-hidden flex justify-center items-center">
+										{/* Background Effect */}
 										<div className="absolute inset-0">
-											<Asthetic />
+											<ProfileBanner
+												currentUsername={
+													currentUsername ?? ""
+												}
+											/>
 										</div>
 
-										{/* Profile Content */}
-										<div className="z-10 flex w-full h-full items-center p-4 space-x-6">
-											{/* Profile Avatar with PhotoView */}
-											<PhotoProvider>
-												<PhotoView
-													src={userInfo.profilePicUrl}
-												>
-													<div className="flex justify-center cursor-pointer">
-														<div className="w-24 h-24 rounded-full ring ring-white ring-offset-base-100 ring-offset-1 overflow-hidden">
-															<img
-																src={
-																	userInfo.profilePicUrl
-																}
-																alt="Profile Picture"
-																className="object-cover h-full w-full"
-															/>
-														</div>
-													</div>
-												</PhotoView>
-											</PhotoProvider>
-
-											{/* Profile Info (Username, Gender, Pronouns) */}
-											<div className="flex flex-col justify-center text-white">
-												<h3 className="text-2xl font-semibold">
-													{userInfo.username}
-												</h3>
-												<p className="text-sm text-gray-300">
-													{userInfo.gender}
-												</p>
-												<p className="text-sm text-gray-400">
-													{userInfo.pronouns}
-												</p>
-											</div>
-										</div>
+										{/* Edit Button on Banner */}
+										<button
+											title="Edit Profile Banner"
+											className="absolute top-4 right-4 text-white hover:text-gray-200 transition"
+											onClick={handleOpenModal}
+										>
+											<FaPencilAlt size={20} />
+										</button>
 									</div>
 
-									{/* Additional User Info Below the Profile Card */}
-									<div className="bg-zinc-950 text-white p-6 rounded-lg shadow-md space-y-4">
+									{/* Profile Picture on Top of Banner */}
+									<div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-28 h-28 rounded-full ring ring-white ring-offset-2 overflow-hidden z-10">
+										<PhotoProvider>
+											<PhotoView
+												src={userInfo.profilePicUrl}
+											>
+												<img
+													src={userInfo.profilePicUrl}
+													alt="Profile Picture"
+													className="object-cover w-full h-full"
+												/>
+											</PhotoView>
+										</PhotoProvider>
+									</div>
+
+									{/* Centered Username and Information Section */}
+									<div className="flex flex-col items-center mt-24">
+										<h3 className="text-2xl font-semibold text-white">
+											{userInfo.username}
+										</h3>
+										<p className="text-sm text-gray-300">
+											{userInfo.gender}
+										</p>
+										<p className="text-sm text-gray-400">
+											{userInfo.pronouns}
+										</p>
+									</div>
+
+									{/* User Info Section with Editable Fields */}
+									<div className="bg-neutral-800 p-6 rounded-lg shadow-md space-y-4">
+										<div className="flex justify-between items-center">
+											<h4 className="text-lg font-semibold">
+												Additional Information
+											</h4>
+											<button
+												title="Edit Information"
+												className="text-blue-500 hover:text-blue-300 transition"
+												onClick={handleOpenModal}
+											>
+												<FaPencilAlt size={16} />
+											</button>
+										</div>
 										<p>
 											<strong>Creation Date:</strong>{" "}
 											{userInfo.creationDate
@@ -1190,11 +1209,10 @@ export const AppPage: FC = () => {
 												: "N/A"}
 										</p>
 										<p>
-											<strong>User ID:</strong>{" "}
-											{userInfo.userId}
+											<strong>Age:</strong> {userInfo.age}
 										</p>
 										<p>
-											<strong>Short Description:</strong>{" "}
+											<strong>Description:</strong>{" "}
 											{userInfo.description}
 										</p>
 									</div>
@@ -1202,24 +1220,27 @@ export const AppPage: FC = () => {
 							) : (
 								activeTab === "qr" && (
 									<div className="py-4 relative font-helvetica border-white border-2 border-opacity-70 rounded-lg">
-										{/* QR Code Tab */}
 										<QRCodeGenerator
 											userId={userInfo?.userId}
 										/>
-
-										{/* Asthetic Component */}
-										<div className="absolute inset-0 w-full h-full pointer-events-none z-[-1] ">
+										<div className="absolute inset-0 w-full h-full pointer-events-none z-[-1]">
 											<Asthetic />
 										</div>
 									</div>
 								)
 							)}
-
-							{/* Removed Close Button from Modal Footer */}
 						</div>
 					</div>
 				</div>
 			)}
+
+			{ProfileEdit && (
+				<EditProfile
+					currentUsername={currentUsername}
+					onClose={handleCloseModal}
+				/>
+			)}
+
 			{/* Toast Notification */}
 			{showToast && (
 				<div className="toast toast-bottom toast-end z-40 font-helvetica">

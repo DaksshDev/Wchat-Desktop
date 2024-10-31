@@ -45,7 +45,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ userId }) => {
 
     return (
         <div className="qr-code-generator flex flex-col items-center justify-center p-4 rounded-lg">
-        <h1 className="text-xl font-bold mb-4">QR Code for User ID</h1>
+        <h1 className="text-xl font-bold mb-4">BonFire GamerID</h1>
         {/* QR Code Canvas */}
         <div className="rounded-lg overflow-hidden">
             <canvas 

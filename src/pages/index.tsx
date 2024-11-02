@@ -38,6 +38,24 @@ export const IndexPage: FC = () => {
 	const navigate = useNavigate();
 
 	useEffect(() => {
+		const checkNetworkStatus = () => {
+			if (!navigator.onLine) {
+				navigate("/offline"); // Redirect to Offline page if offline
+			}
+		};
+
+		// Check on mount
+		checkNetworkStatus();
+
+		// Add event listeners
+		window.addEventListener("offline", checkNetworkStatus);
+
+		return () => {
+			window.removeEventListener("offline", checkNetworkStatus);
+		};
+	}, [navigate]);
+	
+	useEffect(() => {
 		const storedUsername = localStorage.getItem("username");
 		if (storedUsername) {
 			navigate("App"); // Redirect to AppPage if the username exists

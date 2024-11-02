@@ -196,7 +196,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 			{isYoutubePlayerShown && (
 				<div className="fixed w-screen h-screen z-50 right-0 overflow-hidden select-none rounded-lg">
 					<YouTubePlayer
-						initialUrl="https://www.youtube.com/watch?v=NkQxyW5mlZI&list=PLkZU2rKh1mT8cML-VNcUHF3vB8qzzgxuA&index=5"
+						initialUrl="https://youtu.be/At8v_Yc044Y?si=wIOQF51PW3OpQsPL"
 						onClose={() => setYoutubePlayerShown(false)}
 					/>
 				</div>

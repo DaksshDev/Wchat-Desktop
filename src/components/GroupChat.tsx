@@ -881,8 +881,8 @@ const GroupChat: React.FC<GroupChatProps> = ({
 				<div
 					className="absolute z-50 bg-gray-800 text-white p-2 rounded-lg shadow-lg"
 					style={{
-						top: `${showMemberContextMenu.y - 170}px`,
-						left: `${showMemberContextMenu.x - 70}px`,
+						top: `${showMemberContextMenu.y - 100}px`,
+						left: `${showMemberContextMenu.x - 240}px`,
 					}}
 					onMouseLeave={() => setShowMemberContextMenu(null)}
 				>

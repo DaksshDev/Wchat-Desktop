@@ -364,7 +364,7 @@ export const Settings: React.FC<SettingsProps> = ({
 
 				{/* Footer Version Info */}
 				<div className="text-center mt-8 text-neutral-500">
-					Version {appVersion} DEVELOPMENT
+					Version 1.0 OPEN-BETA
 				</div>
 
 				{/* Toast Notification */}

@@ -63,7 +63,7 @@ interface Friend {
 	username: string;
 	profilePicUrl?: string;
 	lastMessage?: string;
-	status?: string;
+	status: string;
 }
 
 export const AppPage: FC = () => {
@@ -520,12 +520,12 @@ export const AppPage: FC = () => {
 						const friendDoc = await getDoc(
 							doc(db, "users", friend.username),
 						);
-						let onlineStatus = "offline";
+						let status = "offline";
 						if (friendDoc.exists()) {
 							const friendData = friendDoc.data();
-							onlineStatus = friendData.onlineStatus || "offline";
+							status = friendData.status || "offline";
 						}
-						return { username: friend.username, onlineStatus };
+						return { username: friend.username, status };
 					}),
 				);
 
@@ -533,10 +533,10 @@ export const AppPage: FC = () => {
 				setFriendsList((prevList) =>
 					prevList.map((friend) => ({
 						...friend,
-						onlineStatus:
+						status:
 							friendsOnlineStatus.find(
 								(status) => status.username === friend.username,
-							)?.onlineStatus || "offline",
+							)?.status || "offline",
 					})),
 				);
 			} catch (error) {
@@ -623,6 +623,9 @@ export const AppPage: FC = () => {
 			await updateDoc(currentUserDocRef, {
 				friendRequests: arrayRemove(senderUsername), // Remove sender from friend requests
 			});
+
+			//reload page after accepting
+			window.location.reload();
 
 			console.log(
 				`Friend request accepted between ${currentUsername} and ${senderUsername}`,
@@ -803,12 +806,19 @@ export const AppPage: FC = () => {
 	}, []);
 
 	useEffect(() => {
-		const timeout = setTimeout(() => {
-			fetchUserInfo(); // Fetch user info once, 2 seconds after mounting
-		}, 2000);
+		const fetchUserInfoInterval = setInterval(() => {
+			fetchUserInfo(); // Fetch user info every 5 seconds
+		}, 5000);
 
-		// Clear the timeout if the component unmounts before the delay completes
-		return () => clearTimeout(timeout);
+		const timeout = setTimeout(() => {
+			fetchUserInfo(); // Fetch user info once, 3 seconds after mounting
+		}, 4000);
+
+		// Clear the timeout and interval if the component unmounts or when showUserModal changes
+		return () => {
+			clearTimeout(timeout);
+			clearInterval(fetchUserInfoInterval);
+		};
 	}, [showUserModal]);
 
 	const closeUserModal = () => {

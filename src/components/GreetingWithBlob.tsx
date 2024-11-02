@@ -218,8 +218,7 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 				{currentTime}
 			</p>
 
-			{/* FLARE AI BUTTON!  */}
-			<div className="absolute bottom-10 left-6 z-50">
+			{/*<div className="absolute bottom-10 left-6 z-50">
 				<div
 					className="tooltip tooltip-top tooltip-info"
 					data-tip="FlareAI"
@@ -230,12 +229,11 @@ const GreetingWithBlob: React.FC<GreetingWithBlobProps> = ({
 							alt="Profile"
 							className="w-full h-full object-cover"
 						/>
-						{/* Shadow effect using borders */}
 						<span className="absolute inset-0 rounded-full border-4 border-blue-500 group-hover:border-orange-500 blur transition-all duration-300"></span>
 						<span className="absolute inset-0 rounded-full border-4 border-green-500 group-hover:border-yellow-500 blur transition-all duration-300 delay-200"></span>
 					</button>
 				</div>
-			</div>
+			</div> */}
 
 			<div className="absolute top-3 right-3 z-50">
 				<div

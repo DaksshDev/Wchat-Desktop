@@ -38,7 +38,6 @@ import ReactPlayer from "react-player";
 import "react-photo-view/dist/react-photo-view.css";
 import { FaFire, FaPencilAlt } from "react-icons/fa";
 import ProfileBanner from "../components/ProfileBanner";
-import EditProfile from "../components/EditProfile";
 
 type UserStatus = "online" | "offline" | "idle";
 
@@ -64,7 +63,7 @@ interface Friend {
 	username: string;
 	profilePicUrl?: string;
 	lastMessage?: string;
-	onlineStatus?: string;
+	status?: string;
 }
 
 export const AppPage: FC = () => {
@@ -78,7 +77,6 @@ export const AppPage: FC = () => {
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const [showQrModal, setShowQrModal] = useState(false);
 	const [funFact, setFunFact] = useState("");
-	const [ProfileEdit, setProfileEdit] = useState(false);
 
 	// Declare state for tracking active tab
 	const [activeTab, setActiveTab] = useState("profile"); // Default to 'profile' tab
@@ -134,13 +132,6 @@ export const AppPage: FC = () => {
 
 	const closeCustomToast = () => {
 		setShowCustomToast(false);
-	};
-	const handleCloseModal = () => {
-		setProfileEdit(false);
-	};
-
-	const handleOpenModal = () => {
-		setProfileEdit(true);
 	};
 	const [status, setStatus] = useState<UserStatus>("offline");
 	const isIdle = useIdle(60000); // User is idle if inactive for 1 minute
@@ -1137,7 +1128,7 @@ export const AppPage: FC = () => {
 							{activeTab === "profile" && userInfo ? (
 								<div className="space-y-8 relative">
 									{/* Banner Area with Edit Button */}
-									<div className="relative w-full h-40  rounded-t-lg overflow-hidden flex justify-center items-center">
+									<div className="relative w-full h-40 rounded-t-lg overflow-hidden flex justify-center items-center">
 										{/* Background Effect */}
 										<div className="absolute inset-0">
 											<ProfileBanner
@@ -1146,15 +1137,6 @@ export const AppPage: FC = () => {
 												}
 											/>
 										</div>
-
-										{/* Edit Button on Banner */}
-										<button
-											title="Edit Profile Banner"
-											className="absolute top-4 right-4 text-white hover:text-gray-200 transition"
-											onClick={handleOpenModal}
-										>
-											<FaPencilAlt size={20} />
-										</button>
 									</div>
 
 									{/* Profile Picture on Top of Banner */}
@@ -1191,13 +1173,6 @@ export const AppPage: FC = () => {
 											<h4 className="text-lg font-semibold">
 												Additional Information
 											</h4>
-											<button
-												title="Edit Information"
-												className="text-blue-500 hover:text-blue-300 transition"
-												onClick={handleOpenModal}
-											>
-												<FaPencilAlt size={16} />
-											</button>
 										</div>
 										<p>
 											<strong>Creation Date:</strong>{" "}
@@ -1211,7 +1186,7 @@ export const AppPage: FC = () => {
 										<p>
 											<strong>Age:</strong> {userInfo.age}
 										</p>
-										<p>
+										<p className="break-words text-balance">
 											<strong>Description:</strong>{" "}
 											{userInfo.description}
 										</p>
@@ -1232,13 +1207,6 @@ export const AppPage: FC = () => {
 						</div>
 					</div>
 				</div>
-			)}
-
-			{ProfileEdit && (
-				<EditProfile
-					currentUsername={currentUsername}
-					onClose={handleCloseModal}
-				/>
 			)}
 
 			{/* Toast Notification */}
@@ -1563,15 +1531,13 @@ export const AppPage: FC = () => {
 												/>
 
 												{/* Status Icon as Overlay */}
-												{friend.onlineStatus ===
-													"online" && (
+												{friend.status === "online" && (
 													<FaFire className="text-orange-500 absolute bottom-0 right-0 transform translate-x-1/2 -translate-y-1/2 p-0.5" />
 												)}
-												{friend.onlineStatus ===
-													"idle" && (
+												{friend.status === "idle" && (
 													<IoMoon className="text-yellow-500 absolute bottom-0 right-0 transform translate-x-1/2 -translate-y-1/2 p-0.5" />
 												)}
-												{friend.onlineStatus ===
+												{friend.status ===
 													"offline" && (
 													<FaFire className="text-gray-500 absolute bottom-0 right-0 transform translate-x-1/2 -translate-y-1/2 p-0.5" />
 												)}
@@ -1588,16 +1554,16 @@ export const AppPage: FC = () => {
 												{/* Status Text with Color */}
 												<span
 													className={`${
-														friend.onlineStatus ===
+														friend.status ===
 														"online"
 															? "text-green-500"
-															: friend.onlineStatus ===
+															: friend.status ===
 															  "idle"
 															? "text-yellow-500"
 															: "text-gray-500"
 													} text-sm truncate`}
 												>
-													{friend.onlineStatus}
+													{friend.status}
 												</span>
 											</div>
 										</div>
@@ -1691,13 +1657,13 @@ export const AppPage: FC = () => {
 							/>
 
 							{/* Status Icon */}
-							{userInfo?.onlineStatus === "online" && (
+							{userInfo?.status === "online" && (
 								<IoCheckmarkCircle className="text-green-500 absolute bottom-0 right-0" />
 							)}
-							{userInfo?.onlineStatus === "idle" && (
+							{userInfo?.status === "idle" && (
 								<IoMoon className="text-yellow-500 absolute bottom-0 right-0" />
 							)}
-							{userInfo?.onlineStatus === "offline" && (
+							{userInfo?.status === "offline" && (
 								<IoCloseCircle className="text-neutral-500 absolute bottom-0 right-0" />
 							)}
 						</div>
@@ -1705,21 +1671,21 @@ export const AppPage: FC = () => {
 						{/* Username and Gender */}
 						<div className="flex flex-col ml-2">
 							<span className="text-neutral-200 font-medium truncate">
-								{userInfo?.username + "  (You)" || "loading..."}
+								{userInfo?.username + "  (You)"}
 							</span>
 							<span className="text-neutral-500 text-sm">
-								{userInfo?.gender || "loading..."}
+								{userInfo?.gender}
 							</span>
 							<span
 								className={`${
-									userInfo?.onlineStatus === "online"
+									userInfo?.status === "online"
 										? "text-green-500"
-										: userInfo?.onlineStatus === "idle"
+										: userInfo?.status === "idle"
 										? "text-yellow-500"
 										: "text-neutral-500"
 								} text-sm`}
 							>
-								{userInfo?.onlineStatus || "loading..."}
+								{userInfo?.status}
 							</span>
 						</div>
 					</div>
